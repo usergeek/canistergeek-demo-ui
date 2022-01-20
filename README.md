@@ -2,6 +2,8 @@
 
 Canistergeek Demo UI is a sample frontend application that utilizes [Canistergeek-IC-JS](https://github.com/usergeek/canistergeek-ic-js).
 
+> Canistergeek-IC-JS should be used together with [Canistergeek-IC-Motoko](https://github.com/usergeek/canistergeek-ic-motoko) - open-source tool for Internet Computer to track your project canisters cycles and memory status.
+
 ## Running the project locally
 
 If you want to test your project locally, you can start a development server with:
