@@ -1,0 +1,69 @@
+@import "variables.less";
+
+// TOOLBAR
+
+// - logo
+.toolbarContent {
+  .toolbarLogoCol {
+    .logoContent {
+      .logoImgHead {
+        width: 45px;
+        height: 45px;
+        color: @color-main-red;
+      }
+
+      .logoImgName {
+        width: 136px;
+        height: 38px;
+      }
+
+      .logoBrandName {
+        color: white;
+        padding-left: @toolbar-logo-brandName-paddingLeft;
+        font-size: @toolbar-logo-brandName-fontSize;
+        text-transform: uppercase;
+      }
+    }
+  }
+}
+
+// - userMenu
+.toolbarContent {
+  .userMenu {
+    background-color: @toolbar-bg-color;
+    cursor: pointer;
+  }
+}
+
+
+// ACE EDITOR
+
+.ace_editor {
+  border: 1px solid @btn-default-border;
+}
+
+// PAGE LOADER
+
+.pageLoaderContainer {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+// BUTTON
+
+button.ug-text {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+button.ug-text-full-width {
+  display: block;
+  width: 100%;
+  text-align: left;
+}

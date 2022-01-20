@@ -1,0 +1,28 @@
+{
+  "canisters": {
+    "canistergeek-demo-ui": {
+      "frontend": {
+        "entrypoint": "src/landing_assets/src/index.html"
+      },
+      "source": [
+        "src/landing_assets/assets",
+        "dist/landing_assets/"
+      ],
+      "type": "assets"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "dfx": "0.8.4",
+  "networks": {
+    "local": {
+      "bind": "127.0.0.1:8000",
+      "type": "ephemeral"
+    }
+  },
+  "version": 1
+}

@@ -1,0 +1,108 @@
+@import "variables.less";
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  background-color: @base-bg-color;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
+body {
+  min-width: @body-min-width;
+}
+
+.toolbarRow {
+  background-color: @toolbar-bg-color;
+  height: @toolbar-height;
+  flex-shrink: 0;
+
+  .toolbarContent {
+
+    height: 100%;
+
+    .toolbarLogoCol {
+      height: @toolbar-height;
+    }
+
+  }
+}
+
+//ряд контента под тулбаром
+//растягивается на всю оставшуюся высоту
+.contentRow {
+
+  background-color: @base-bg-color;
+  flex-grow: 1;
+
+  //левый и правый столбик по бокам контента
+  .contentColLeftSide, .contentColRightSide {
+    background-color: @base-bg-color;
+  }
+
+  //среднаяя колонка контента
+  .contentCol {
+    display: flex;
+    flex-direction: column;
+    background-color: @base-bg-color;
+
+    .pageContentCol {
+      background-color: @pageContentCard-bg-color;
+      margin: @pageContentCol-margin;
+
+      //баннер над заголовком страницы
+      .pageBanner {
+        padding-bottom: 16px;
+        background-color: #f0f2f5;
+      }
+
+      //заголовок страницы
+      .ant-page-header {
+        //background-color: @pageContentCard-bg-color;
+      }
+
+      //содержимое страницы
+      .pageContent {
+        padding: @pageContent-padding;
+
+        .pageContentTopDivider {
+          margin: @pageContentTopDivider-margin;
+          padding: @pageContentTopDivider-padding;
+        }
+
+        .pageContentAlert {
+          margin: @PageContentAlert-margin;
+        }
+
+        .pageContentCard {
+
+          padding: @pageContentCard-padding;
+
+          .pageContentCardSection {
+            color: lightgray;
+            font-size: @form-item-label-font-size + 2;
+            margin-top: 18px;
+            padding-bottom: 3px;
+          }
+
+          .pageContentCardSection:first-child {
+            margin-top: 0;
+          }
+        }
+
+        .pageContentCardSpacer {
+          background-color: rgb(240, 242, 245);
+          height: 16px;
+        }
+
+      }
+    }
+
+  }
+}

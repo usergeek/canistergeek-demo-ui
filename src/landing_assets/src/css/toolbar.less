@@ -1,0 +1,53 @@
+.toolbarContent {
+
+  .toolbarLogoCol {
+    .logoContent {
+      height: @toolbar-height - 2;
+
+      .logoImgHead {
+        width: 45px;
+        height: 45px;
+        color: @color-main-red;
+        //margin-top: -2px;
+      }
+
+      .logoImgName {
+        width: 136px;
+        height: 38px;
+        //margin-top: 5px;
+      }
+
+      .logoBrandName {
+        color: white;
+        padding-left: @toolbar-logo-brandName-paddingLeft;
+        font-size: @toolbar-logo-brandName-fontSize;
+        text-transform: uppercase;
+      }
+    }
+  }
+
+  .toolbarContentCol {
+    .toolbarContentGoToComponent {
+      margin-left: 20px;
+
+      .goToMenu, .goToMenu:disabled {
+        color: @toolbar-text-color;
+      }
+    }
+  }
+
+  .projectSwitcher {
+    color: @toolbar-text-color;
+
+    .projectSwitcherLabel {
+      white-space: normal;
+      word-break: break-all;
+      text-align: right;
+    }
+  }
+
+  .userMenu {
+    background-color: @toolbar-bg-color;
+    cursor: pointer;
+  }
+}
