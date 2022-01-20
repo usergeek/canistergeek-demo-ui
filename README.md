@@ -16,3 +16,7 @@ npm run start
 ```
 
 Which will start a server at `http://localhost:3001`, proxying API requests to the replica at port 8000.
+
+## Try online
+
+The latest version of Canistergeek-Demo-UI is available on [https://canistergeek.app](https://canistergeek.app)
