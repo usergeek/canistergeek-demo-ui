@@ -19,4 +19,4 @@ Which will start a server at `http://localhost:3001`, proxying API requests to t
 
 ## Try online
 
-The latest version of Canistergeek-Demo-UI is available on [https://canistergeek.app](https://canistergeek.app)
+You can try the latest version of Canistergeek Demo UI at [https://canistergeek.app](https://canistergeek.app)
