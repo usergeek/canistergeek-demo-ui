@@ -34,19 +34,19 @@ body {
   }
 }
 
-//ряд контента под тулбаром
-//растягивается на всю оставшуюся высоту
+// content row below toolbar
+// full page width
 .contentRow {
 
   background-color: @base-bg-color;
   flex-grow: 1;
 
-  //левый и правый столбик по бокам контента
+  // columns on the left/right side
   .contentColLeftSide, .contentColRightSide {
     background-color: @base-bg-color;
   }
 
-  //среднаяя колонка контента
+  // middle content column
   .contentCol {
     display: flex;
     flex-direction: column;
@@ -56,18 +56,18 @@ body {
       background-color: @pageContentCard-bg-color;
       margin: @pageContentCol-margin;
 
-      //баннер над заголовком страницы
+      // banner above page header
       .pageBanner {
         padding-bottom: 16px;
         background-color: #f0f2f5;
       }
 
-      //заголовок страницы
+      // page header
       .ant-page-header {
         //background-color: @pageContentCard-bg-color;
       }
 
-      //содержимое страницы
+      // page content
       .pageContent {
         padding: @pageContent-padding;
 
