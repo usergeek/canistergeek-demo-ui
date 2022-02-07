@@ -18,7 +18,7 @@
     "antd": "^4.16.12",
     "assert": "2.0.0",
     "buffer": "6.0.3",
-    "canistergeek-ic-js": "github:usergeek/canistergeek-ic-js",
+    "canistergeek-ic-js": "github:usergeek/canistergeek-ic-js#v0.0.5",
     "copy-webpack-plugin": "^9.0.1",
     "css-loader": "^6.5.1",
     "css-minimizer-webpack-plugin": "^3.3.1",

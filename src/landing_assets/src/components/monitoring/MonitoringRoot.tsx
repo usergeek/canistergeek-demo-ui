@@ -5,6 +5,8 @@ import {MonitoringDashboard} from "src/landing_assets/src/components/monitoring/
 
 export const URL__GITHUB_CANISTERGEEK_MOTOKO = `https://github.com/usergeek/canistergeek-ic-motoko`
 export const URL__GITHUB_CANISTERGEEK_MOTOKO_LIMIT = `${URL__GITHUB_CANISTERGEEK_MOTOKO}#limit-access-to-your-data`
+export const URL__GITHUB_CANISTERGEEK_RUST = `https://github.com/usergeek/canistergeek_ic_rust`
+export const URL__GITHUB_CANISTERGEEK_RUST_LIMIT = `${URL__GITHUB_CANISTERGEEK_RUST}#limit-access-to-your-data`
 
 export const MonitoringRoot = () => {
     const configurationContext = useConfigurationContext();
@@ -12,7 +14,13 @@ export const MonitoringRoot = () => {
     if (configurationContext.configuration.canisters.length == 0) {
         return <>
             <Switch>
-                <Route path={urlPathContext.basePathRoot} exact render={() => <EmptyConfigurationPage configURL={urlPathContext.configPath} githubMotokoLibraryURL={URL__GITHUB_CANISTERGEEK_MOTOKO} githubMotokoLibraryLimitAccessURL={URL__GITHUB_CANISTERGEEK_MOTOKO_LIMIT}/>}/>
+                <Route path={urlPathContext.basePathRoot} exact render={() => <EmptyConfigurationPage
+                    configURL={urlPathContext.configPath}
+                    githubMotokoLibraryURL={URL__GITHUB_CANISTERGEEK_MOTOKO}
+                    githubMotokoLibraryLimitAccessURL={URL__GITHUB_CANISTERGEEK_MOTOKO_LIMIT}
+                    githubRustLibraryURL={URL__GITHUB_CANISTERGEEK_RUST}
+                    githubRustLibraryLimitAccessURL={URL__GITHUB_CANISTERGEEK_RUST_LIMIT}
+                />}/>
                 <Route path={urlPathContext.configPath} component={ConfigurationPage}/>
                 <Redirect from="*" to={urlPathContext.basePathRoot}/>
             </Switch>
