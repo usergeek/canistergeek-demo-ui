@@ -152,7 +152,7 @@ export const PlugAuthProvider = (props: PropsWithChildren<Props>) => {
             }
         })()
 
-    },[configurationContext.configuration, contextStatus.isLoggedIn])
+    }, [configurationContext.configuration, contextStatus.isLoggedIn])
 
     // RESULT
 

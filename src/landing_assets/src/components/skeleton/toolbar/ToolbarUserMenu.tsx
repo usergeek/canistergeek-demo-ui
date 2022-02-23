@@ -1,7 +1,7 @@
 import * as React from "react";
 import {useCallback} from "react";
 import {Avatar, Dropdown, Menu, message, Modal, Typography} from "antd";
-import {SettingOutlined} from "@ant-design/icons";
+import {UserOutlined} from "@ant-design/icons";
 import {useAuthProviderContext} from "src/landing_assets/src/components/auth/AuthProvider";
 
 export const ToolbarUserMenu = () => {
@@ -55,7 +55,7 @@ export const ToolbarUserMenu = () => {
     const sourceName = authProviderContext.source == "II" ? "Internet Identity" : authProviderContext.source == "Stoic" ? "Stoic" : "Plug"
 
     const menu = loggedIn ? <Menu style={{minWidth: "200px"}}>
-            <Menu.Item key={"principal"} >
+            <Menu.Item key={"principal"}>
                 Principal: <Typography.Text copyable code className={"apiKey"}>{principal}</Typography.Text>
             </Menu.Item>
             <Menu.Divider/>
@@ -75,6 +75,6 @@ export const ToolbarUserMenu = () => {
             </Menu.Item>
         </Menu>
     return <Dropdown overlay={menu} trigger={["click"]} placement="bottomRight">
-        <Avatar size={32} icon={<SettingOutlined/>} className={"userMenu"}/>
+        <Avatar size={32} icon={<UserOutlined/>} className={"userMenu"}/>
     </Dropdown>
 }

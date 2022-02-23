@@ -10,6 +10,11 @@ import {SkeletonComponent} from "src/landing_assets/src/components/skeleton/Skel
 import {ToolbarComponent} from "src/landing_assets/src/components/skeleton/toolbar/ToolbarComponent";
 import {MonitoringRoot} from "src/landing_assets/src/components/monitoring/MonitoringRoot";
 
+export const URL__GITHUB_CANISTERGEEK_MOTOKO = `https://github.com/usergeek/canistergeek-ic-motoko`
+export const URL__GITHUB_CANISTERGEEK_MOTOKO_LIMIT = `${URL__GITHUB_CANISTERGEEK_MOTOKO}#limit-access-to-your-data`
+export const URL__GITHUB_CANISTERGEEK_RUST = `https://github.com/usergeek/canistergeek_ic_rust`
+export const URL__GITHUB_CANISTERGEEK_RUST_LIMIT = `${URL__GITHUB_CANISTERGEEK_RUST}#limit-access-to-your-data`
+
 const AuthComponents = (props: PropsWithChildren<any>) => <AuthSourceProvider>
     <InternetIdentityAuthProvider>
         <PlugAuthProvider>
@@ -46,7 +51,12 @@ const SkeletonComponentWrapper = () => {
 
 export const Monitoring = () => <ConfigurationComponents>
     <AuthComponents>
-        <URLPathProvider basePath={`/dashboard`} configPath={`/config`}>
+        <URLPathProvider basePath={`/monitoring`}
+                         configPath={`/settings`}
+                         githubMotokoLibraryURL={URL__GITHUB_CANISTERGEEK_MOTOKO}
+                         githubMotokoLibraryLimitAccessURL={URL__GITHUB_CANISTERGEEK_MOTOKO_LIMIT}
+                         githubRustLibraryURL={URL__GITHUB_CANISTERGEEK_RUST}
+                         githubRustLibraryLimitAccessURL={URL__GITHUB_CANISTERGEEK_RUST_LIMIT}>
             <SkeletonComponentWrapper/>
         </URLPathProvider>
     </AuthComponents>

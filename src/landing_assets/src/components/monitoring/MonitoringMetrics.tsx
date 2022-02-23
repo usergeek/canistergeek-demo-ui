@@ -1,15 +1,15 @@
 import * as React from "react";
-import {CanistergeekPage, DataProvider, PrecalculatedPredictionDataProvider, PrecalculatedRealtimeDataProvider, PrecalculatedTrendDataProvider} from "canistergeek-ic-js";
+import {CanistergeekMetricsPage, DataProvider, PrecalculatedPredictionDataProvider, PrecalculatedRealtimeDataProvider, PrecalculatedTrendDataProvider} from "canistergeek-ic-js";
 import {useAuthProviderContext} from "src/landing_assets/src/components/auth/AuthProvider";
 
-export const MonitoringDashboard = () => {
+export const MonitoringMetrics = () => {
     const authProviderContext = useAuthProviderContext();
     return <>
         <DataProvider identity={authProviderContext.state.identity}>
             <PrecalculatedRealtimeDataProvider>
                 <PrecalculatedTrendDataProvider>
                     <PrecalculatedPredictionDataProvider>
-                        <CanistergeekPage/>
+                        <CanistergeekMetricsPage/>
                     </PrecalculatedPredictionDataProvider>
                 </PrecalculatedTrendDataProvider>
             </PrecalculatedRealtimeDataProvider>

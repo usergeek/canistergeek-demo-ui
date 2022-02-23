@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Row, Col } from "antd";
+import {Col, Row} from "antd";
 import {ToolbarLogoComponent} from "src/landing_assets/src/components/skeleton/toolbar/logo/ToolbarLogoComponent";
 import {ToolbarUserMenu} from "src/landing_assets/src/components/skeleton/toolbar/ToolbarUserMenu";
 import {ToolbarGoToComponent} from "src/landing_assets/src/components/skeleton/toolbar/ToolbarGoToComponent";

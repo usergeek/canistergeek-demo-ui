@@ -2,6 +2,9 @@ import * as React from "react";
 import {PropsWithChildren, useCallback, useState} from "react";
 import {useCustomCompareMemo} from "use-custom-compare";
 import _ from "lodash"
+import {KeyValueStoreFacade} from "canistergeek-ic-js";
+
+const keyValueStore = KeyValueStoreFacade.createStore("canistergeek__");
 
 export type Source = "II" | "Plug" | "Stoic" | undefined
 
@@ -21,8 +24,8 @@ export const useAuthSourceProviderContext = () => {
     return context;
 };
 
-const LOCAL_STORAGE__KEY__SOURCE = "canistergeek__key__source";
-const initialSourceInLocalStorage = localStorage.getItem(LOCAL_STORAGE__KEY__SOURCE)
+const LOCAL_STORAGE__KEY__SOURCE = "key__source";
+const initialSourceInLocalStorage = keyValueStore.get(LOCAL_STORAGE__KEY__SOURCE)
 
 export const AuthSourceProvider = (props: PropsWithChildren<any>) => {
     // RESULT
@@ -30,9 +33,9 @@ export const AuthSourceProvider = (props: PropsWithChildren<any>) => {
 
     const setSourceFn: SetSourceFn = useCallback<SetSourceFn>((source: Source) => {
         if (source) {
-            localStorage.setItem(LOCAL_STORAGE__KEY__SOURCE, source)
+            keyValueStore.set(LOCAL_STORAGE__KEY__SOURCE, source)
         } else {
-            localStorage.removeItem(LOCAL_STORAGE__KEY__SOURCE)
+            keyValueStore.remove(LOCAL_STORAGE__KEY__SOURCE)
         }
         setSource(source)
     }, [])

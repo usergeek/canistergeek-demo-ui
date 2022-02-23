@@ -7,7 +7,6 @@ import {useAuthSourceProviderContext} from "../authSource/AuthSourceProvider";
 import {Identity} from "@dfinity/agent";
 import {AuthClientFacade} from "./AuthClientFacade";
 
-
 type ContextStatus = {
     inProgress: boolean
     isReady: boolean

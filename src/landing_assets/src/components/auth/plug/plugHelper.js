@@ -5,7 +5,7 @@ export const PlugHelper = {
      * @param {Array<string> | undefined} whitelist
      * @return {Promise<import("@dfinity/agent").Identity | undefined>};
      */
-    getLoggedInIdentity: async (whitelist= undefined) => {
+    getLoggedInIdentity: async (whitelist = undefined) => {
         try {
             const plug = getGlobalPlug()
             if (plug) {
@@ -26,7 +26,7 @@ export const PlugHelper = {
      * @param {Array<string> | undefined} whitelist
      * @return {Promise<import("@dfinity/agent").Identity | undefined>};
      */
-    login: async (whitelist= undefined) => {
+    login: async (whitelist = undefined) => {
         try {
             const plug = getGlobalPlug()
             if (plug) {

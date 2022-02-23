@@ -16,7 +16,7 @@
       }
 
       .logoBrandName {
-        color: white;
+        color: @toolbar-text-color;
         padding-left: @toolbar-logo-brandName-paddingLeft;
         font-size: @toolbar-logo-brandName-fontSize;
         text-transform: uppercase;
@@ -26,11 +26,16 @@
 
   .toolbarContentCol {
     .toolbarContentGoToComponent {
-      margin-left: 20px;
+      margin-left: 50px;
 
-      .goToMenu, .goToMenu:disabled {
+      a {
+        font-size: 1.1em;
         color: @toolbar-text-color;
       }
+      a.active {
+        text-decoration: underline;
+      }
+
     }
   }
 
