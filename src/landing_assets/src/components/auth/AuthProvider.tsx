@@ -8,6 +8,7 @@ import {Source, useAuthSourceProviderContext} from "./authSource/AuthSourceProvi
 import {unstable_batchedUpdates} from "react-dom";
 import {useInternetIdentityAuthProviderContext} from "./internetIdentity/InternetIdentityAuthProvider";
 import {useStoicAuthProviderContext} from "./stoic/StoicAuthProvider";
+import {useNFIDInternetIdentityAuthProviderContext} from "src/landing_assets/src/components/auth/nfid/NFIDInternetIdentityAuthProvider";
 
 type ContextStatus = {
     inProgress: boolean
@@ -60,6 +61,7 @@ export const AuthProvider = (props: PropsWithChildren<any>) => {
     const plugAuthProviderContext = usePlugAuthProviderContext();
     const stoicAuthProviderContext = useStoicAuthProviderContext()
     const internetIdentityAuthProviderContext = useInternetIdentityAuthProviderContext();
+    const nfidInternetIdentityAuthProviderContext = useNFIDInternetIdentityAuthProviderContext();
 
     const [contextSource, setContextSource] = useState<Source>(() => {
         return authSourceProviderContext.source
@@ -83,12 +85,15 @@ export const AuthProvider = (props: PropsWithChildren<any>) => {
             case "II": {
                 return internetIdentityAuthProviderContext.login()
             }
+            case "NFID": {
+                return nfidInternetIdentityAuthProviderContext.login()
+            }
             case "Stoic": {
                 return stoicAuthProviderContext.login()
             }
         }
         return false
-    }, [plugAuthProviderContext.login, internetIdentityAuthProviderContext.login, stoicAuthProviderContext.login,])
+    }, [plugAuthProviderContext.login, internetIdentityAuthProviderContext.login, nfidInternetIdentityAuthProviderContext.login, stoicAuthProviderContext.login,])
 
     const logout: LogoutFn = useCallback<LogoutFn>(async (source: Source) => {
         switch (source) {
@@ -98,11 +103,14 @@ export const AuthProvider = (props: PropsWithChildren<any>) => {
             case "II": {
                 return internetIdentityAuthProviderContext.logout()
             }
+            case "NFID": {
+                return nfidInternetIdentityAuthProviderContext.logout()
+            }
             case "Stoic": {
                 return stoicAuthProviderContext.logout()
             }
         }
-    }, [plugAuthProviderContext.logout, internetIdentityAuthProviderContext.logout, stoicAuthProviderContext.logout,])
+    }, [plugAuthProviderContext.logout, internetIdentityAuthProviderContext.logout, nfidInternetIdentityAuthProviderContext.logout, stoicAuthProviderContext.logout,])
 
 
     useCustomCompareEffect(() => {
@@ -120,6 +128,11 @@ export const AuthProvider = (props: PropsWithChildren<any>) => {
                 state = internetIdentityAuthProviderContext.state
                 break
             }
+            case "NFID": {
+                status = nfidInternetIdentityAuthProviderContext.status
+                state = nfidInternetIdentityAuthProviderContext.state
+                break
+            }
             case "Stoic": {
                 status = stoicAuthProviderContext.status
                 state = stoicAuthProviderContext.state
@@ -129,6 +142,7 @@ export const AuthProvider = (props: PropsWithChildren<any>) => {
                 const isReady = _.some([
                     plugAuthProviderContext.status,
                     internetIdentityAuthProviderContext.status,
+                    nfidInternetIdentityAuthProviderContext.status,
                     stoicAuthProviderContext.status,
                 ], value => {
                     return value.isReady
@@ -147,11 +161,11 @@ export const AuthProvider = (props: PropsWithChildren<any>) => {
         plugAuthProviderContext.state,
         internetIdentityAuthProviderContext.status,
         internetIdentityAuthProviderContext.state,
+        nfidInternetIdentityAuthProviderContext.status,
+        nfidInternetIdentityAuthProviderContext.state,
         stoicAuthProviderContext.status,
         stoicAuthProviderContext.state,
-    ], (prevDeps, nextDeps) => {
-        return _.isEqual(prevDeps, nextDeps)
-    })
+    ], _.isEqual)
 
     const value = useCustomCompareMemo<Context, [
         Source,
@@ -171,9 +185,7 @@ export const AuthProvider = (props: PropsWithChildren<any>) => {
         contextState,
         login,
         logout,
-    ], (prevDeps, nextDeps) => {
-        return _.isEqual(prevDeps, nextDeps)
-    })
+    ], _.isEqual)
 
     return <AuthProviderContext.Provider value={value}>
         {props.children}

@@ -5,7 +5,7 @@ import {useCustomCompareMemo} from "use-custom-compare";
 import _ from "lodash";
 import {Source, useAuthSourceProviderContext} from "../authSource/AuthSourceProvider";
 import {Identity} from "@dfinity/agent";
-import {AuthClientFacade} from "./AuthClientFacade";
+import {NFIDAuthClientFacade as AuthClientFacade} from "./NFIDAuthClientFacade";
 
 type ContextStatus = {
     inProgress: boolean
@@ -40,18 +40,18 @@ const initialContextValue: Context = {
     logout: () => undefined,
 }
 
-const InternetIdentityAuthProviderContext = React.createContext<Context | undefined>(undefined)
-export const useInternetIdentityAuthProviderContext = () => {
-    const context = React.useContext<Context | undefined>(InternetIdentityAuthProviderContext);
+const NFIDInternetIdentityAuthProviderContext = React.createContext<Context | undefined>(undefined)
+export const useNFIDInternetIdentityAuthProviderContext = () => {
+    const context = React.useContext<Context | undefined>(NFIDInternetIdentityAuthProviderContext);
     if (!context) {
-        throw new Error("useInternetIdentityAuthProviderContext must be used within a InternetIdentityAuthProviderContext.Provider")
+        throw new Error("useNFIDInternetIdentityAuthProviderContext must be used within a NFIDInternetIdentityAuthProviderContext.Provider")
     }
     return context;
 };
 
-const PROVIDER_SOURCE: Source = "II"
+const PROVIDER_SOURCE: Source = "NFID"
 
-export const InternetIdentityAuthProvider = (props: PropsWithChildren<any>) => {
+export const NFIDInternetIdentityAuthProvider = (props: PropsWithChildren<any>) => {
 
     const authSourceProviderContext = useAuthSourceProviderContext();
 
@@ -90,7 +90,7 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<any>) => {
                 updateContextState({identity: undefined})
             })
         } catch (e) {
-            console.error("InternetIdentityAuthProvider: login: caught error", e);
+            console.error("NFIDInternetIdentityAuthProvider: login: caught error", e);
             unstable_batchedUpdates(() => {
                 authSourceProviderContext.setSource(undefined)
                 updateContextStatus({isLoggedIn: false, inProgress: false})
@@ -112,7 +112,7 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<any>) => {
                 updateContextState({identity: undefined})
             })
         } catch (e) {
-            console.error("InternetIdentityAuthProvider: logout: caught error", e);
+            console.error("NFIDInternetIdentityAuthProvider: logout: caught error", e);
             unstable_batchedUpdates(() => {
                 authSourceProviderContext.setSource(undefined)
                 updateContextStatus({isLoggedIn: false})
@@ -154,7 +154,7 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<any>) => {
                     updateContextState({identity: undefined})
                 })
             } catch (e) {
-                console.error("InternetIdentityAuthProvider: useEffect[]: caught error", authSourceProviderContext.source, e);
+                console.error("NFIDInternetIdentityAuthProvider: useEffect[]: caught error", authSourceProviderContext.source, e);
                 unstable_batchedUpdates(() => {
                     if (authSourceProviderContext.source == PROVIDER_SOURCE) {
                         authSourceProviderContext.setSource(undefined)
@@ -187,8 +187,8 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<any>) => {
         return _.isEqual(prevDeps, nextDeps)
     })
 
-    return <InternetIdentityAuthProviderContext.Provider value={value}>
+    return <NFIDInternetIdentityAuthProviderContext.Provider value={value}>
         {props.children}
-    </InternetIdentityAuthProviderContext.Provider>
+    </NFIDInternetIdentityAuthProviderContext.Provider>
 }
 

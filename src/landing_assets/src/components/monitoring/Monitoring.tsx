@@ -9,6 +9,7 @@ import {AuthProvider, useAuthProviderContext} from "src/landing_assets/src/compo
 import {SkeletonComponent} from "src/landing_assets/src/components/skeleton/SkeletonComponent";
 import {ToolbarComponent} from "src/landing_assets/src/components/skeleton/toolbar/ToolbarComponent";
 import {MonitoringRoot} from "src/landing_assets/src/components/monitoring/MonitoringRoot";
+import {NFIDInternetIdentityAuthProvider} from "src/landing_assets/src/components/auth/nfid/NFIDInternetIdentityAuthProvider";
 
 export const URL__GITHUB_CANISTERGEEK_MOTOKO = `https://github.com/usergeek/canistergeek-ic-motoko`
 export const URL__GITHUB_CANISTERGEEK_MOTOKO_LIMIT = `${URL__GITHUB_CANISTERGEEK_MOTOKO}#limit-access-to-your-data`
@@ -17,13 +18,15 @@ export const URL__GITHUB_CANISTERGEEK_RUST_LIMIT = `${URL__GITHUB_CANISTERGEEK_R
 
 const AuthComponents = (props: PropsWithChildren<any>) => <AuthSourceProvider>
     <InternetIdentityAuthProvider>
-        <PlugAuthProvider>
-            <StoicAuthProvider>
-                <AuthProvider>
-                    {props.children}
-                </AuthProvider>
-            </StoicAuthProvider>
-        </PlugAuthProvider>
+        <NFIDInternetIdentityAuthProvider>
+            <PlugAuthProvider>
+                <StoicAuthProvider>
+                    <AuthProvider>
+                        {props.children}
+                    </AuthProvider>
+                </StoicAuthProvider>
+            </PlugAuthProvider>
+        </NFIDInternetIdentityAuthProvider>
     </InternetIdentityAuthProvider>
 </AuthSourceProvider>
 

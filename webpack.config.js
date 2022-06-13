@@ -113,6 +113,7 @@ module.exports = {
         new webpack.EnvironmentPlugin({
             NODE_ENV: "development",
             II_URL: isDevelopment ? LOCAL_II_URL : "https://identity.ic0.app",
+            NFID_II_URL: "https://nfid.one/authenticate/?applicationName=Canistergeek&applicationLogo=https%3A%2F%2Fxcxtd-2qaaa-aaaah-qabfa-cai.raw.ic0.app%2Ffavicon-64.svg#authorize",
         }),
         new webpack.ProvidePlugin({
             Buffer: [require.resolve("buffer/"), "Buffer"],

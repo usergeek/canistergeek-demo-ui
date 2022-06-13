@@ -3,6 +3,7 @@ import {useCallback} from "react";
 import {Avatar, Dropdown, Menu, message, Modal, Typography} from "antd";
 import {UserOutlined} from "@ant-design/icons";
 import {useAuthProviderContext} from "src/landing_assets/src/components/auth/AuthProvider";
+import {Source} from "src/landing_assets/src/components/auth/authSource/AuthSourceProvider";
 
 export const ToolbarUserMenu = () => {
     const authProviderContext = useAuthProviderContext();
@@ -23,6 +24,15 @@ export const ToolbarUserMenu = () => {
             const success = await authProviderContext.login("II")
             if (!success) {
                 message.error("II login failed");
+            }
+        })()
+    }, [])
+
+    const handleLoginNFID = useCallback(() => {
+        (async () => {
+            const success = await authProviderContext.login("NFID")
+            if (!success) {
+                message.error("NFID login failed");
             }
         })()
     }, [])
@@ -52,7 +62,7 @@ export const ToolbarUserMenu = () => {
         })
     }
 
-    const sourceName = authProviderContext.source == "II" ? "Internet Identity" : authProviderContext.source == "Stoic" ? "Stoic" : "Plug"
+    const sourceName = getAuthSourceLabel(authProviderContext.source)
 
     const menu = loggedIn ? <Menu style={{minWidth: "200px"}}>
             <Menu.Item key={"principal"}>
@@ -67,6 +77,9 @@ export const ToolbarUserMenu = () => {
             <Menu.Item key={"loginII"}>
                 <button onClick={handleLoginII} className={"ug-text ug-text-full-width"}>Login with Internet Identity</button>
             </Menu.Item>
+            <Menu.Item key={"loginNFID"}>
+                <button onClick={handleLoginNFID} className={"ug-text ug-text-full-width"}>Login with NFID</button>
+            </Menu.Item>
             <Menu.Item key={"loginPlug"}>
                 <button onClick={handleLoginPlug} className={"ug-text ug-text-full-width"}>Login with Plug</button>
             </Menu.Item>
@@ -77,4 +90,18 @@ export const ToolbarUserMenu = () => {
     return <Dropdown overlay={menu} trigger={["click"]} placement="bottomRight">
         <Avatar size={32} icon={<UserOutlined/>} className={"userMenu"}/>
     </Dropdown>
+}
+
+const getAuthSourceLabel = (source: Source): string => {
+    switch (source) {
+        case "II":
+            return "Internet Identity"
+        case "Plug":
+            return "Plug"
+        case "Stoic":
+            return "Stoic"
+        case "NFID":
+            return "NFID"
+    }
+    return ""
 }

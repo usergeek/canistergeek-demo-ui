@@ -6,7 +6,7 @@ import {KeyValueStoreFacade} from "canistergeek-ic-js";
 
 const keyValueStore = KeyValueStoreFacade.createStore("canistergeek__");
 
-export type Source = "II" | "Plug" | "Stoic" | undefined
+export type Source = "II" | "Plug" | "Stoic" | "NFID" | undefined
 
 type SetSourceFn = (source: Source) => void
 
