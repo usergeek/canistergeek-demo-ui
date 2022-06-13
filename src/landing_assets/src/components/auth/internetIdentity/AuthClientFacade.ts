@@ -28,6 +28,10 @@ const login = (authClient: AuthClient, identityProvider: string | undefined): Pr
         return authClient.login({
             identityProvider: identityProvider,
             maxTimeToLive: BigInt(2592000_000_000_000),
+            windowOpenerFeatures:
+                `left=${window.screen.width / 2 - 200}, `+
+                `top=${window.screen.height / 2 - 300},` +
+                `toolbar=0,location=0,menubar=0,width=400,height=600`,
             onSuccess: async () => {
                 const identity = authClient.getIdentity();
                 if (!identity.getPrincipal().isAnonymous()) {
