@@ -8,7 +8,7 @@ import {Source, useAuthSourceProviderContext} from "./authSource/AuthSourceProvi
 import {unstable_batchedUpdates} from "react-dom";
 import {useInternetIdentityAuthProviderContext} from "./internetIdentity/InternetIdentityAuthProvider";
 import {useStoicAuthProviderContext} from "./stoic/StoicAuthProvider";
-import {useNFIDInternetIdentityAuthProviderContext} from "src/landing_assets/src/components/auth/nfid/NFIDInternetIdentityAuthProvider";
+import {useNFIDInternetIdentityAuthProviderContext} from "src/landing_assets/src/components/auth/nfid/NFIDAuthProvider";
 
 type ContextStatus = {
     inProgress: boolean
@@ -83,10 +83,10 @@ export const AuthProvider = (props: PropsWithChildren<any>) => {
                 return plugAuthProviderContext.login()
             }
             case "II": {
-                return internetIdentityAuthProviderContext.login()
+                return internetIdentityAuthProviderContext.login(process.env.II_URL)
             }
             case "NFID": {
-                return nfidInternetIdentityAuthProviderContext.login()
+                return nfidInternetIdentityAuthProviderContext.login(process.env.NFID_II_URL)
             }
             case "Stoic": {
                 return stoicAuthProviderContext.login()

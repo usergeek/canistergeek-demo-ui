@@ -1,8 +1,6 @@
 import {Identity} from "@dfinity/agent";
 import {AuthClient} from "@dfinity/auth-client";
 
-const IDENTITY_URL = process.env.II_URL
-
 let authClientInstance: AuthClient | undefined = undefined
 
 const provideAuthClient = async (): Promise<AuthClient | undefined> => {
@@ -25,10 +23,10 @@ const restoreIdentity = async (authClient: AuthClient): Promise<Identity | undef
     await logout(authClient)
 }
 
-const login = (authClient: AuthClient): Promise<Identity | undefined> => {
+const login = (authClient: AuthClient, identityProvider: string | undefined): Promise<Identity | undefined> => {
     return new Promise((resolve, reject) => {
         return authClient.login({
-            identityProvider: IDENTITY_URL,
+            identityProvider: identityProvider,
             maxTimeToLive: BigInt(2592000_000_000_000),
             onSuccess: async () => {
                 const identity = authClient.getIdentity();

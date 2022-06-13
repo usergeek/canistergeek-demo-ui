@@ -2,14 +2,14 @@ import {ConfigurationLocalStorageProvider, ConfigurationProvider, PageLoaderComp
 import * as React from "react";
 import {PropsWithChildren} from "react";
 import {AuthSourceProvider} from "src/landing_assets/src/components/auth/authSource/AuthSourceProvider";
-import {InternetIdentityAuthProvider} from "src/landing_assets/src/components/auth/internetIdentity/InternetIdentityAuthProvider";
+import {InternetIdentityAuthProvider, InternetIdentityAuthProviderContext} from "src/landing_assets/src/components/auth/internetIdentity/InternetIdentityAuthProvider";
 import {PlugAuthProvider} from "src/landing_assets/src/components/auth/plug/PlugAuthProvider";
 import {StoicAuthProvider} from "src/landing_assets/src/components/auth/stoic/StoicAuthProvider";
 import {AuthProvider, useAuthProviderContext} from "src/landing_assets/src/components/auth/AuthProvider";
 import {SkeletonComponent} from "src/landing_assets/src/components/skeleton/SkeletonComponent";
 import {ToolbarComponent} from "src/landing_assets/src/components/skeleton/toolbar/ToolbarComponent";
 import {MonitoringRoot} from "src/landing_assets/src/components/monitoring/MonitoringRoot";
-import {NFIDInternetIdentityAuthProvider} from "src/landing_assets/src/components/auth/nfid/NFIDInternetIdentityAuthProvider";
+import {NFIDInternetIdentityAuthProviderContext} from "src/landing_assets/src/components/auth/nfid/NFIDAuthProvider";
 
 export const URL__GITHUB_CANISTERGEEK_MOTOKO = `https://github.com/usergeek/canistergeek-ic-motoko`
 export const URL__GITHUB_CANISTERGEEK_MOTOKO_LIMIT = `${URL__GITHUB_CANISTERGEEK_MOTOKO}#limit-access-to-your-data`
@@ -17,8 +17,8 @@ export const URL__GITHUB_CANISTERGEEK_RUST = `https://github.com/usergeek/canist
 export const URL__GITHUB_CANISTERGEEK_RUST_LIMIT = `${URL__GITHUB_CANISTERGEEK_RUST}#limit-access-to-your-data`
 
 const AuthComponents = (props: PropsWithChildren<any>) => <AuthSourceProvider>
-    <InternetIdentityAuthProvider>
-        <NFIDInternetIdentityAuthProvider>
+    <InternetIdentityAuthProvider source={"II"} context={InternetIdentityAuthProviderContext}>
+        <InternetIdentityAuthProvider source={"NFID"} context={NFIDInternetIdentityAuthProviderContext}>
             <PlugAuthProvider>
                 <StoicAuthProvider>
                     <AuthProvider>
@@ -26,7 +26,7 @@ const AuthComponents = (props: PropsWithChildren<any>) => <AuthSourceProvider>
                     </AuthProvider>
                 </StoicAuthProvider>
             </PlugAuthProvider>
-        </NFIDInternetIdentityAuthProvider>
+        </InternetIdentityAuthProvider>
     </InternetIdentityAuthProvider>
 </AuthSourceProvider>
 

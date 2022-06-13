@@ -17,10 +17,10 @@ type ContextState = {
     identity: Identity | undefined
 }
 
-type LoginFn = () => Promise<boolean>
+type LoginFn = (identityProvider: string | undefined) => Promise<boolean>
 type LogoutFn = () => void
 
-interface Context {
+export interface Context {
     status: ContextStatus
     state: ContextState
     login: LoginFn
@@ -40,7 +40,7 @@ const initialContextValue: Context = {
     logout: () => undefined,
 }
 
-const InternetIdentityAuthProviderContext = React.createContext<Context | undefined>(undefined)
+export const InternetIdentityAuthProviderContext = React.createContext<Context | undefined>(undefined)
 export const useInternetIdentityAuthProviderContext = () => {
     const context = React.useContext<Context | undefined>(InternetIdentityAuthProviderContext);
     if (!context) {
@@ -49,9 +49,12 @@ export const useInternetIdentityAuthProviderContext = () => {
     return context;
 };
 
-const PROVIDER_SOURCE: Source = "II"
+type Props = {
+    context: React.Context<Context | undefined>
+    source: Source
+}
 
-export const InternetIdentityAuthProvider = (props: PropsWithChildren<any>) => {
+export const InternetIdentityAuthProvider = (props: PropsWithChildren<Props>) => {
 
     const authSourceProviderContext = useAuthSourceProviderContext();
 
@@ -67,15 +70,15 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<any>) => {
         _.cloneDeep(initialContextValue.state)
     )
 
-    const login: LoginFn = useCallback<LoginFn>(async () => {
+    const login: LoginFn = useCallback<LoginFn>(async (identityProvider: string | undefined) => {
         try {
             unstable_batchedUpdates(() => {
-                authSourceProviderContext.setSource(PROVIDER_SOURCE)
+                authSourceProviderContext.setSource(props.source)
                 updateContextStatus({inProgress: true})
             })
             const authClient = await AuthClientFacade.provideAuthClient();
             if (authClient) {
-                const identity: Identity | undefined = await AuthClientFacade.login(authClient)
+                const identity: Identity | undefined = await AuthClientFacade.login(authClient, identityProvider)
                 if (identity) {
                     unstable_batchedUpdates(() => {
                         updateContextStatus({isLoggedIn: true, inProgress: false})
@@ -98,7 +101,7 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<any>) => {
             })
         }
         return false
-    }, [])
+    }, [props.source])
 
     const logout: LogoutFn = useCallback<LogoutFn>(async () => {
         const authClient = await AuthClientFacade.provideAuthClient();
@@ -127,7 +130,7 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<any>) => {
     useEffect(() => {
         (async () => {
             try {
-                if (authSourceProviderContext.source == PROVIDER_SOURCE) {
+                if (authSourceProviderContext.source == props.source) {
                     updateContextStatus({inProgress: true})
                     const authClient = await AuthClientFacade.provideAuthClient();
                     if (authClient) {
@@ -147,7 +150,7 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<any>) => {
                     })
                 }
                 unstable_batchedUpdates(() => {
-                    if (authSourceProviderContext.source == PROVIDER_SOURCE) {
+                    if (authSourceProviderContext.source == props.source) {
                         authSourceProviderContext.setSource(undefined)
                     }
                     updateContextStatus({isReady: true, isLoggedIn: false, inProgress: false})
@@ -156,7 +159,7 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<any>) => {
             } catch (e) {
                 console.error("InternetIdentityAuthProvider: useEffect[]: caught error", authSourceProviderContext.source, e);
                 unstable_batchedUpdates(() => {
-                    if (authSourceProviderContext.source == PROVIDER_SOURCE) {
+                    if (authSourceProviderContext.source == props.source) {
                         authSourceProviderContext.setSource(undefined)
                     }
                     updateContextStatus({isReady: true, isLoggedIn: false, inProgress: false})
@@ -164,7 +167,7 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<any>) => {
                 })
             }
         })()
-    }, [])
+    }, [props.source])
 
     // RESULT
 
@@ -187,8 +190,8 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<any>) => {
         return _.isEqual(prevDeps, nextDeps)
     })
 
-    return <InternetIdentityAuthProviderContext.Provider value={value}>
+    return <props.context.Provider value={value}>
         {props.children}
-    </InternetIdentityAuthProviderContext.Provider>
+    </props.context.Provider>
 }
 
