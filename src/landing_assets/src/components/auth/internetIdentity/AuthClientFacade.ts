@@ -5,7 +5,7 @@ let authClientInstance: AuthClient | undefined = undefined
 
 const provideAuthClient = async (): Promise<AuthClient | undefined> => {
     if (!authClientInstance) {
-        const authClient = await AuthClient.create();
+        const authClient = await AuthClient.create({idleOptions: {disableIdle: true}});
         await authClient.isAuthenticated();
         authClientInstance = authClient
     }
