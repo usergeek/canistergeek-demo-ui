@@ -29,9 +29,9 @@ const login = (authClient: AuthClient, identityProvider: string | undefined): Pr
             identityProvider: identityProvider,
             maxTimeToLive: BigInt(2592000_000_000_000),
             windowOpenerFeatures:
-                `left=${window.screen.width / 2 - 200}, `+
-                `top=${window.screen.height / 2 - 300},` +
-                `toolbar=0,location=0,menubar=0,width=400,height=600`,
+                `left=${window.screen.width / 2 - 525 / 2}, `+
+                `top=${window.screen.height / 2 - 705 / 2}, `+
+                `toolbar=0,location=0,menubar=0,width=525,height=705`,
             onSuccess: async () => {
                 const identity = authClient.getIdentity();
                 if (!identity.getPrincipal().isAnonymous()) {
