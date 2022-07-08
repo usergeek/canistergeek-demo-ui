@@ -5,9 +5,12 @@ import {useCustomCompareCallback, useCustomCompareMemo} from "use-custom-compare
 import _ from "lodash";
 import {useAuthSourceProviderContext} from "../authSource/AuthSourceProvider";
 import {PlugHelper} from "./plugHelper";
-import {Identity} from "@dfinity/agent";
+import {HttpAgent, Identity} from "@dfinity/agent";
 import {useConfigurationContext} from "canistergeek-ic-js";
-import {Configuration} from "canistergeek-ic-js/lib/es5/dataProvider/ConfigurationProvider";
+import {Canister, Configuration} from "canistergeek-ic-js/lib/es5/dataProvider/ConfigurationProvider";
+import {AuthAccount} from "../AuthCommon";
+import {Util} from "../util";
+import {BLACKHOLE_CANISTER_ID} from "canistergeek-ic-js/lib/es5/api/blackhole0_0_0";
 
 type ContextStatus = {
     inProgress: boolean
@@ -17,6 +20,8 @@ type ContextStatus = {
 
 type ContextState = {
     identity: Identity | undefined
+    httpAgent: HttpAgent | undefined
+    accounts: Array<AuthAccount>
 }
 
 type LoginFn = () => Promise<boolean>
@@ -37,6 +42,8 @@ const initialContextValue: Context = {
     },
     state: {
         identity: undefined,
+        accounts: [],
+        httpAgent: undefined,
     },
     login: () => Promise.reject(),
     logout: () => undefined,
@@ -75,25 +82,27 @@ export const PlugAuthProvider = (props: PropsWithChildren<Props>) => {
                 authSourceProviderContext.setSource("Plug")
                 updateContextStatus({inProgress: true})
             })
-            const identity = await PlugHelper.login(configurationContext.configuration.canisters.map(v => v.canisterId))
+            const whitelist: Array<string> = prepareWhitelist(configurationContext.configuration.canisters)
+            const identity = await PlugHelper.login(whitelist)
             if (identity) {
+                const accounts = await getIdentityAccounts(identity)
                 unstable_batchedUpdates(() => {
                     updateContextStatus({isLoggedIn: true, inProgress: false})
-                    updateContextState({identity: identity})
+                    updateContextState({identity: identity, accounts: accounts, httpAgent: PlugHelper.getAgent()})
                 })
                 return true
             }
             unstable_batchedUpdates(() => {
                 authSourceProviderContext.setSource(undefined)
                 updateContextStatus({isLoggedIn: false, inProgress: false})
-                updateContextState({identity: undefined})
+                updateContextState({identity: undefined, accounts: [], httpAgent: undefined})
             })
         } catch (e) {
             console.error("PlugAuthProvider: login: caught error", e);
             unstable_batchedUpdates(() => {
                 authSourceProviderContext.setSource(undefined)
                 updateContextStatus({isLoggedIn: false, inProgress: false})
-                updateContextState({identity: undefined})
+                updateContextState({identity: undefined, accounts: [], httpAgent: undefined})
             })
         }
         return false
@@ -105,7 +114,7 @@ export const PlugAuthProvider = (props: PropsWithChildren<Props>) => {
         unstable_batchedUpdates(() => {
             authSourceProviderContext.setSource(undefined)
             updateContextStatus({isLoggedIn: false})
-            updateContextState({identity: undefined})
+            updateContextState({identity: undefined, accounts: [], httpAgent: undefined})
         })
     }, [])
 
@@ -116,11 +125,13 @@ export const PlugAuthProvider = (props: PropsWithChildren<Props>) => {
             try {
                 if (authSourceProviderContext.source == "Plug") {
                     updateContextStatus({inProgress: true})
-                    const identity = await PlugHelper.getLoggedInIdentity(configurationContext.configuration.canisters.map(v => v.canisterId))
+                    const whitelist: Array<string> = prepareWhitelist(configurationContext.configuration.canisters)
+                    const identity = await PlugHelper.getLoggedInIdentity(whitelist)
                     if (identity) {
+                        const accounts = await getIdentityAccounts(identity)
                         unstable_batchedUpdates(() => {
                             updateContextStatus({isReady: true, isLoggedIn: true, inProgress: false})
-                            updateContextState({identity: identity})
+                            updateContextState({identity: identity, accounts: accounts, httpAgent: PlugHelper.getAgent()})
                         })
                         return
                     }
@@ -130,7 +141,7 @@ export const PlugAuthProvider = (props: PropsWithChildren<Props>) => {
                         authSourceProviderContext.setSource(undefined)
                     }
                     updateContextStatus({isReady: true, isLoggedIn: false, inProgress: false})
-                    updateContextState({identity: undefined})
+                    updateContextState({identity: undefined, accounts: [], httpAgent: undefined})
                 })
             } catch (e) {
                 console.error("PlugAuthProvider: useEffect[]: caught error", authSourceProviderContext.source, e);
@@ -139,20 +150,11 @@ export const PlugAuthProvider = (props: PropsWithChildren<Props>) => {
                         authSourceProviderContext.setSource(undefined)
                     }
                     updateContextStatus({isReady: true, isLoggedIn: false, inProgress: false})
-                    updateContextState({identity: undefined})
+                    updateContextState({identity: undefined, accounts: [], httpAgent: undefined})
                 })
             }
         })()
     }, [])
-
-    useEffect(() => {
-        (async () => {
-            if (contextStatus.isLoggedIn) {
-                await login()
-            }
-        })()
-
-    }, [configurationContext.configuration, contextStatus.isLoggedIn])
 
     // RESULT
 
@@ -178,4 +180,24 @@ export const PlugAuthProvider = (props: PropsWithChildren<Props>) => {
     return <PlugAuthProviderContext.Provider value={value}>
         {props.children}
     </PlugAuthProviderContext.Provider>
+}
+
+const getIdentityAccounts = async (identity: Identity): Promise<Array<AuthAccount>> => {
+    try {
+        return [{
+            name: "Plug Main Wallet",
+            accountIdentifier: Util.principalToAccountIdentifier(identity.getPrincipal().toText(), 0)
+        }]
+    } catch (e) {
+        return []
+    }
+}
+
+const prepareWhitelist = (configCanisters: Array<Canister>): Array<string> => {
+    const hasBlackholeSource = _.some(configCanisters, v => v.metricsSource?.includes("blackhole"))
+    const whitelist: Array<string> = _.map(configCanisters, v => v.canisterId)
+    if (hasBlackholeSource && !_.includes(whitelist, BLACKHOLE_CANISTER_ID)) {
+        whitelist.push(BLACKHOLE_CANISTER_ID)
+    }
+    return whitelist
 }

@@ -6,6 +6,7 @@ import _ from "lodash";
 import {StoicIdentity} from "ic-stoic-identity";
 import {useAuthSourceProviderContext} from "../authSource/AuthSourceProvider";
 import {Identity} from "@dfinity/agent";
+import {AuthAccount} from "../AuthCommon";
 
 type ContextStatus = {
     inProgress: boolean
@@ -15,6 +16,7 @@ type ContextStatus = {
 
 type ContextState = {
     identity: Identity | undefined
+    accounts: Array<AuthAccount>
 }
 
 type LoginFn = () => Promise<boolean>
@@ -35,6 +37,7 @@ const initialContextValue: Context = {
     },
     state: {
         identity: undefined,
+        accounts: []
     },
     login: () => Promise.reject(),
     logout: () => undefined,
@@ -74,23 +77,24 @@ export const StoicAuthProvider = (props: PropsWithChildren<Props>) => {
             })
             const identity = await StoicIdentity.connect();
             if (identity) {
+                const accounts = await getIdentityAccounts(identity)
                 unstable_batchedUpdates(() => {
                     updateContextStatus({isLoggedIn: true, inProgress: false})
-                    updateContextState({identity: identity})
+                    updateContextState({identity: identity, accounts: accounts})
                 })
                 return true
             }
             unstable_batchedUpdates(() => {
                 authSourceProviderContext.setSource(undefined)
                 updateContextStatus({isLoggedIn: false, inProgress: false})
-                updateContextState({identity: undefined})
+                updateContextState({identity: undefined, accounts: []})
             })
         } catch (e) {
             console.error("StoicAuthProvider: login: caught error", e);
             unstable_batchedUpdates(() => {
                 authSourceProviderContext.setSource(undefined)
                 updateContextStatus({isLoggedIn: false, inProgress: false})
-                updateContextState({identity: undefined})
+                updateContextState({identity: undefined, accounts: []})
             })
         }
         return false
@@ -101,7 +105,7 @@ export const StoicAuthProvider = (props: PropsWithChildren<Props>) => {
         unstable_batchedUpdates(() => {
             authSourceProviderContext.setSource(undefined)
             updateContextStatus({isLoggedIn: false})
-            updateContextState({identity: undefined})
+            updateContextState({identity: undefined, accounts: []})
         })
     }, [])
 
@@ -114,9 +118,10 @@ export const StoicAuthProvider = (props: PropsWithChildren<Props>) => {
                     updateContextStatus({inProgress: true})
                     const identity = await StoicIdentity.load();
                     if (identity) {
+                        const accounts = await getIdentityAccounts(identity)
                         unstable_batchedUpdates(() => {
                             updateContextStatus({isReady: true, isLoggedIn: true, inProgress: false})
-                            updateContextState({identity: identity})
+                            updateContextState({identity: identity, accounts: accounts})
                         })
                         return
                     }
@@ -126,7 +131,7 @@ export const StoicAuthProvider = (props: PropsWithChildren<Props>) => {
                         authSourceProviderContext.setSource(undefined)
                     }
                     updateContextStatus({isReady: true, isLoggedIn: false, inProgress: false})
-                    updateContextState({identity: undefined})
+                    updateContextState({identity: undefined, accounts: []})
                 })
             } catch (e) {
                 console.error("StoicAuthProvider: useEffect[]: caught error", authSourceProviderContext.source, e);
@@ -135,7 +140,7 @@ export const StoicAuthProvider = (props: PropsWithChildren<Props>) => {
                         authSourceProviderContext.setSource(undefined)
                     }
                     updateContextStatus({isReady: true, isLoggedIn: false, inProgress: false})
-                    updateContextState({identity: undefined})
+                    updateContextState({identity: undefined, accounts: []})
                 })
             }
         })()
@@ -165,4 +170,17 @@ export const StoicAuthProvider = (props: PropsWithChildren<Props>) => {
     return <StoicAuthProviderContext.Provider value={value}>
         {props.children}
     </StoicAuthProviderContext.Provider>
+}
+
+const getIdentityAccounts = async (identity: any): Promise<Array<AuthAccount>> => {
+    try {
+        const accountsResult = JSON.parse(await identity.accounts())
+        const accounts: Array<AuthAccount> = _.map<any, AuthAccount>(accountsResult, v => ({
+            name: v.name,
+            accountIdentifier: v.address
+        }))
+        return accounts
+    } catch (e) {
+        return []
+    }
 }

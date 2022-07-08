@@ -1,14 +1,16 @@
 import * as React from "react";
 import {PropsWithChildren, Reducer, useCallback, useReducer, useState} from "react";
-import {useCustomCompareEffect, useCustomCompareMemo} from "use-custom-compare";
+import {useCustomCompareCallback, useCustomCompareEffect, useCustomCompareMemo} from "use-custom-compare";
 import _ from "lodash"
-import {Identity} from "@dfinity/agent";
+import {HttpAgent, Identity} from "@dfinity/agent";
+import {Principal} from "@dfinity/principal";
 import {usePlugAuthProviderContext} from "./plug/PlugAuthProvider";
 import {Source, useAuthSourceProviderContext} from "./authSource/AuthSourceProvider";
 import {unstable_batchedUpdates} from "react-dom";
 import {useInternetIdentityAuthProviderContext} from "./internetIdentity/InternetIdentityAuthProvider";
 import {useStoicAuthProviderContext} from "./stoic/StoicAuthProvider";
-import {useNFIDInternetIdentityAuthProviderContext} from "src/landing_assets/src/components/auth/nfid/NFIDAuthProvider";
+import {useNFIDInternetIdentityAuthProviderContext} from "./nfid/NFIDAuthProvider";
+import {AuthAccount} from "./AuthCommon";
 
 type ContextStatus = {
     inProgress: boolean
@@ -18,10 +20,16 @@ type ContextStatus = {
 
 type ContextState = {
     identity: Identity | undefined
+    accounts: Array<AuthAccount>
+    currentAccount: number | undefined
+    httpAgent: HttpAgent | undefined
 }
 
 type LoginFn = (source: Source) => Promise<boolean>
 type LogoutFn = (source: Source) => void
+type SwitchAccountFn = (targetAccount: number) => void
+type GetCurrentPrincipalFn = () => Principal | undefined
+type GetCurrentAccountFn = () => AuthAccount | undefined
 
 interface Context {
     source: Source
@@ -29,6 +37,9 @@ interface Context {
     state: ContextState
     login: LoginFn
     logout: LogoutFn
+    switchAccount: SwitchAccountFn
+    getCurrentPrincipal: GetCurrentPrincipalFn
+    getCurrentAccount: GetCurrentAccountFn
 }
 
 const initialContextValue: Context = {
@@ -40,9 +51,15 @@ const initialContextValue: Context = {
     },
     state: {
         identity: undefined,
+        accounts: [],
+        currentAccount: undefined,
+        httpAgent: undefined,
     },
     login: () => Promise.reject(),
     logout: () => undefined,
+    switchAccount: (targetAccount: number) => undefined,
+    getCurrentPrincipal: () => undefined,
+    getCurrentAccount: () => undefined,
 }
 
 
@@ -112,6 +129,37 @@ export const AuthProvider = (props: PropsWithChildren<any>) => {
         }
     }, [plugAuthProviderContext.logout, internetIdentityAuthProviderContext.logout, nfidInternetIdentityAuthProviderContext.logout, stoicAuthProviderContext.logout,])
 
+    const switchAccount: SwitchAccountFn = useCustomCompareCallback((targetAccount: number) => {
+        // console.log("switchAccount: targetAccount", targetAccount);
+        // console.log("switchAccount: contextState.accounts", contextState.accounts);
+        if (contextState.accounts.length > targetAccount) {
+            const newContextState = {
+                ...contextState,
+                currentAccount: targetAccount
+            };
+            // console.log("switchAccount: newContextState", newContextState);
+            updateContextState(newContextState)
+        }
+    }, [contextState], _.isEqual)
+
+    const getCurrentPrincipal: GetCurrentPrincipalFn = useCustomCompareCallback(() => {
+        // console.log("getCurrentAccount: contextStatus.isReady", contextStatus.isReady);
+        // console.log("getCurrentAccount: contextStatus.isLoggedIn", contextStatus.isLoggedIn);
+        // console.log("getCurrentAccount: contextState.identity", contextState.identity);
+        if (contextStatus.isReady && contextStatus.isLoggedIn && contextState.identity != undefined) {
+            return contextState.identity.getPrincipal()
+        }
+        return undefined
+    }, [contextState.identity, contextStatus], _.isEqual)
+
+    const getCurrentAccount: GetCurrentAccountFn = useCustomCompareCallback(() => {
+        // console.log("getCurrentAccount: currentAccount", contextState.currentAccount);
+        // console.log("switchAccount: contextState.accounts", contextState.accounts);
+        if (contextState.currentAccount != undefined && contextState.accounts.length > contextState.currentAccount) {
+            return contextState.accounts[contextState.currentAccount]
+        }
+        return undefined
+    }, [contextState], _.isEqual)
 
     useCustomCompareEffect(() => {
         const source = authSourceProviderContext.source;
@@ -120,22 +168,42 @@ export const AuthProvider = (props: PropsWithChildren<any>) => {
         switch (source) {
             case "Plug": {
                 status = plugAuthProviderContext.status
-                state = plugAuthProviderContext.state
+                state = {
+                    identity: plugAuthProviderContext.state.identity,
+                    accounts: plugAuthProviderContext.state.accounts,
+                    currentAccount: 0,
+                    httpAgent: plugAuthProviderContext.state.httpAgent,
+                }
                 break
             }
             case "II": {
                 status = internetIdentityAuthProviderContext.status
-                state = internetIdentityAuthProviderContext.state
+                state = {
+                    identity: internetIdentityAuthProviderContext.state.identity,
+                    accounts: internetIdentityAuthProviderContext.state.accounts,
+                    currentAccount: 0,
+                    httpAgent: undefined,
+                }
                 break
             }
             case "NFID": {
                 status = nfidInternetIdentityAuthProviderContext.status
-                state = nfidInternetIdentityAuthProviderContext.state
+                state = {
+                    identity: nfidInternetIdentityAuthProviderContext.state.identity,
+                    accounts: nfidInternetIdentityAuthProviderContext.state.accounts,
+                    currentAccount: 0,
+                    httpAgent: undefined,
+                }
                 break
             }
             case "Stoic": {
                 status = stoicAuthProviderContext.status
-                state = stoicAuthProviderContext.state
+                state = {
+                    identity: stoicAuthProviderContext.state.identity,
+                    accounts: stoicAuthProviderContext.state.accounts,
+                    currentAccount: 0,
+                    httpAgent: undefined,
+                }
                 break
             }
             default: {
@@ -173,18 +241,27 @@ export const AuthProvider = (props: PropsWithChildren<any>) => {
         ContextState,
         LoginFn,
         LogoutFn,
+        SwitchAccountFn,
+        GetCurrentPrincipalFn,
+        GetCurrentAccountFn,
     ]>(() => ({
         source: contextSource,
         status: contextStatus,
         state: contextState,
         login: login,
         logout: logout,
+        switchAccount: switchAccount,
+        getCurrentPrincipal: getCurrentPrincipal,
+        getCurrentAccount: getCurrentAccount,
     }), [
         contextSource,
         contextStatus,
         contextState,
         login,
         logout,
+        switchAccount,
+        getCurrentPrincipal,
+        getCurrentAccount,
     ], _.isEqual)
 
     return <AuthProviderContext.Provider value={value}>

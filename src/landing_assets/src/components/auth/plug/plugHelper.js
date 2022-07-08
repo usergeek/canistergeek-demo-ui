@@ -1,4 +1,4 @@
-const host = "https://mainnet.dfinity.network";
+const host = process.env.NODE_ENV === "development" ? "http://localhost:8000" : "https://mainnet.dfinity.network";
 
 export const PlugHelper = {
     /**
@@ -14,7 +14,8 @@ export const PlugHelper = {
                     if (!plug.agent) {
                         await plug.createAgent({host, whitelist});
                     }
-                    const identity = await plug.agent._identity;
+                    const agent = PlugHelper.getAgent()
+                    const identity = await agent._identity;
                     return identity;
                 }
             }
@@ -35,13 +36,22 @@ export const PlugHelper = {
                     if (!plug.agent) {
                         await plug.createAgent({host})
                     }
-                    return await plug.agent._identity;
+                    const agent = PlugHelper.getAgent()
+                    return await agent._identity;
                 }
             }
         } catch (e) {
             console.warn("Cannot login with Plug:", e);
             throw e
         }
+    },
+
+    /**
+     * @return {import("@dfinity/agent").HttpAgent | undefined};
+     */
+    getAgent: () => {
+        const plug = getGlobalPlug()
+        return plug.sessionManager.sessionData.agent
     }
 }
 

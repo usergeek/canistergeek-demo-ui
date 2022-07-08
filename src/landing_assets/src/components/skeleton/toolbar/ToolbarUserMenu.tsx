@@ -4,12 +4,13 @@ import {Avatar, Dropdown, Menu, message, Modal, Typography} from "antd";
 import {UserOutlined} from "@ant-design/icons";
 import {useAuthProviderContext} from "src/landing_assets/src/components/auth/AuthProvider";
 import {Source} from "src/landing_assets/src/components/auth/authSource/AuthSourceProvider";
+import {AuthAccount} from "src/landing_assets/src/components/auth/AuthCommon";
 
 export const ToolbarUserMenu = () => {
     const authProviderContext = useAuthProviderContext();
     const loggedIn = authProviderContext.status.isReady && authProviderContext.status.isLoggedIn;
     const principal = loggedIn && authProviderContext.state.identity ? authProviderContext.state.identity.getPrincipal().toText() : "";
-
+    const currentAccount: AuthAccount | undefined = authProviderContext.getCurrentAccount();
     const handleLoginPlug = useCallback(() => {
         (async () => {
             const success = await authProviderContext.login("Plug")
@@ -66,6 +67,7 @@ export const ToolbarUserMenu = () => {
 
     const menu = loggedIn ? <Menu style={{minWidth: "200px"}}>
             <Menu.Item key={"principal"}>
+                {currentAccount ? <><b>{currentAccount.name}</b><br/></> : null}
                 Principal: <Typography.Text copyable code className={"apiKey"}>{principal}</Typography.Text>
             </Menu.Item>
             <Menu.Divider/>

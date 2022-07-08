@@ -6,6 +6,8 @@ import _ from "lodash";
 import {Source, useAuthSourceProviderContext} from "../authSource/AuthSourceProvider";
 import {Identity} from "@dfinity/agent";
 import {AuthClientFacade} from "./AuthClientFacade";
+import {AuthAccount} from "../AuthCommon";
+import {Util} from "../util";
 
 type ContextStatus = {
     inProgress: boolean
@@ -15,6 +17,7 @@ type ContextStatus = {
 
 type ContextState = {
     identity: Identity | undefined
+    accounts: Array<AuthAccount>
 }
 
 type LoginFn = (identityProvider: string | undefined) => Promise<boolean>
@@ -35,6 +38,7 @@ const initialContextValue: Context = {
     },
     state: {
         identity: undefined,
+        accounts: []
     },
     login: () => Promise.reject(),
     logout: () => undefined,
@@ -78,11 +82,12 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<Props>) =>
             })
             const authClient = await AuthClientFacade.provideAuthClient();
             if (authClient) {
-                const identity: Identity | undefined = await AuthClientFacade.login(authClient, identityProvider)
+                const identity: Identity | undefined = await AuthClientFacade.login(authClient, identityProvider, props.source === "II" ? "II" : "NFID")
                 if (identity) {
+                    const accounts = await getIdentityAccounts(identity, props.source)
                     unstable_batchedUpdates(() => {
                         updateContextStatus({isLoggedIn: true, inProgress: false})
-                        updateContextState({identity: identity})
+                        updateContextState({identity: identity, accounts: accounts})
                     })
                     return true
                 }
@@ -90,14 +95,14 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<Props>) =>
             unstable_batchedUpdates(() => {
                 authSourceProviderContext.setSource(undefined)
                 updateContextStatus({isLoggedIn: false, inProgress: false})
-                updateContextState({identity: undefined})
+                updateContextState({identity: undefined, accounts: []})
             })
         } catch (e) {
             console.error("InternetIdentityAuthProvider: login: caught error", e);
             unstable_batchedUpdates(() => {
                 authSourceProviderContext.setSource(undefined)
                 updateContextStatus({isLoggedIn: false, inProgress: false})
-                updateContextState({identity: undefined})
+                updateContextState({identity: undefined, accounts: []})
             })
         }
         return false
@@ -112,14 +117,14 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<Props>) =>
             unstable_batchedUpdates(() => {
                 authSourceProviderContext.setSource(undefined)
                 updateContextStatus({isLoggedIn: false})
-                updateContextState({identity: undefined})
+                updateContextState({identity: undefined, accounts: []})
             })
         } catch (e) {
             console.error("InternetIdentityAuthProvider: logout: caught error", e);
             unstable_batchedUpdates(() => {
                 authSourceProviderContext.setSource(undefined)
                 updateContextStatus({isLoggedIn: false})
-                updateContextState({identity: undefined})
+                updateContextState({identity: undefined, accounts: []})
             })
         }
 
@@ -136,9 +141,10 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<Props>) =>
                     if (authClient) {
                         const identity = await AuthClientFacade.restoreIdentity(authClient)
                         if (identity) {
+                            const accounts = await getIdentityAccounts(identity, props.source)
                             unstable_batchedUpdates(() => {
                                 updateContextStatus({isReady: true, isLoggedIn: true, inProgress: false})
-                                updateContextState({identity: identity})
+                                updateContextState({identity: identity, accounts: accounts})
                             })
                             return
                         }
@@ -146,7 +152,7 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<Props>) =>
                     unstable_batchedUpdates(() => {
                         authSourceProviderContext.setSource(undefined)
                         updateContextStatus({isReady: true, isLoggedIn: false, inProgress: false})
-                        updateContextState({identity: undefined})
+                        updateContextState({identity: undefined, accounts: []})
                     })
                 }
                 unstable_batchedUpdates(() => {
@@ -154,7 +160,7 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<Props>) =>
                         authSourceProviderContext.setSource(undefined)
                     }
                     updateContextStatus({isReady: true, isLoggedIn: false, inProgress: false})
-                    updateContextState({identity: undefined})
+                    updateContextState({identity: undefined, accounts: []})
                 })
             } catch (e) {
                 console.error("InternetIdentityAuthProvider: useEffect[]: caught error", authSourceProviderContext.source, e);
@@ -163,7 +169,7 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<Props>) =>
                         authSourceProviderContext.setSource(undefined)
                     }
                     updateContextStatus({isReady: true, isLoggedIn: false, inProgress: false})
-                    updateContextState({identity: undefined})
+                    updateContextState({identity: undefined, accounts: []})
                 })
             }
         })()
@@ -195,3 +201,13 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<Props>) =>
     </props.context.Provider>
 }
 
+const getIdentityAccounts = async (identity: Identity, source: Source): Promise<Array<AuthAccount>> => {
+    try {
+        return [{
+            name: source === "II" ? "NNS Main Wallet" : "NFID Main Wallet",
+            accountIdentifier: Util.principalToAccountIdentifier(identity.getPrincipal().toText(), 0)
+        }]
+    } catch (e) {
+        return []
+    }
+}
