@@ -5,7 +5,7 @@ import {useAuthProviderContext} from "src/landing_assets/src/components/auth/Aut
 export const MonitoringMetrics = () => {
     const authProviderContext = useAuthProviderContext();
     return <>
-        <DataProvider identity={authProviderContext.state.identity} httpAgent={authProviderContext.state.httpAgent}>
+        <DataProvider identity={authProviderContext.state.identity} createActorFn={authProviderContext.createActor}>
             <PrecalculatedRealtimeDataProvider>
                 <PrecalculatedTrendDataProvider>
                     <PrecalculatedPredictionDataProvider>

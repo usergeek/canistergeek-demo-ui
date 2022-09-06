@@ -5,7 +5,7 @@ import {useAuthProviderContext} from "src/landing_assets/src/components/auth/Aut
 export const MonitoringLogs = () => {
     const authProviderContext = useAuthProviderContext();
     return <>
-        <LogMessagesDataProvider identity={authProviderContext.state.identity} httpAgent={authProviderContext.state.httpAgent}>
+        <LogMessagesDataProvider identity={authProviderContext.state.identity} createActorFn={authProviderContext.createActor}>
             <CanistergeekLogMessagesPage/>
         </LogMessagesDataProvider>
     </>

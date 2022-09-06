@@ -1,20 +1,25 @@
-const host = process.env.NODE_ENV === "development" ? "http://localhost:8000" : undefined
+const host = process.env.NODE_ENV === "development" ? "http://localhost:8000" : undefined//"https://mainnet.dfinity.network";
 
 const Helper = {
     /**
+     * @param {Array<string> | undefined} whitelist
      * @return {Promise<import("@dfinity/principal").Principal | undefined>};
      */
-    getLoggedInPrincipal: async () => {
+    getLoggedInPrincipal: async (whitelist = undefined) => {
         try {
             const wallet = getGlobalWallet()
             if (wallet) {
                 const connected = await wallet.isConnected()
-                if (connected) {
-                    return await Helper.getPrincipal()
+                if (!connected || !wallet.agent) {
+                    await wallet.requestConnect({
+                        host: host,
+                        whitelist: whitelist,
+                    });
                 }
+                return await Helper.getPrincipal()
             }
         } catch (e) {
-            console.warn("Cannot auto-login with Plug:", e);
+            console.warn("Cannot auto-login with InfinityWallet:", e);
         }
     },
     /**
@@ -25,17 +30,14 @@ const Helper = {
         try {
             const wallet = getGlobalWallet()
             if (wallet) {
-                const result = await wallet.requestConnect({
+                await wallet.requestConnect({
                     host: host,
                     whitelist: whitelist,
-                    timeout: 10000,
                 });
-                if (result) {
-                    return await Helper.getPrincipal()
-                }
+                return await Helper.getPrincipal()
             }
         } catch (e) {
-            console.warn("Cannot login with Plug:", e);
+            console.warn("Cannot login with InfinityWallet:", e);
             throw e
         }
     },
@@ -64,11 +66,10 @@ const Helper = {
         try {
             const wallet = getGlobalWallet()
             if (wallet) {
-                console.log("PlugHelper: createActor", parameters);
                 return await wallet.createActor(parameters)
             }
         } catch (e) {
-            console.error("Plug: cannot create actor using parameters", parameters, e);
+            console.error("InfinityWallet: cannot create actor using parameters", parameters, e);
         }
         return undefined
     },
@@ -80,16 +81,15 @@ const Helper = {
         try {
             const wallet = getGlobalWallet()
             if (wallet) {
-                console.log("Plug: logout");
                 await wallet.disconnect()
             }
         } catch (e) {
-            console.error("Plug: cannot disconnect");
+            console.error("InfinityWallet: cannot disconnect");
         }
     },
 };
 
-export const PlugHelper = Helper
+export const InfinityWalletHelper = Helper
 
 const getGlobalIC = () => {
     // @ts-ignore
@@ -98,5 +98,5 @@ const getGlobalIC = () => {
 
 const getGlobalWallet = () => {
     // @ts-ignore
-    return getGlobalIC().plug
+    return getGlobalIC().infinityWallet
 }

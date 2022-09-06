@@ -4,7 +4,7 @@ import {unstable_batchedUpdates} from "react-dom";
 import {useCustomCompareCallback, useCustomCompareMemo} from "use-custom-compare";
 import _ from "lodash";
 import {useAuthSourceProviderContext} from "../authSource/AuthSourceProvider";
-import {PlugHelper} from "./plugHelper";
+import {InfinityWalletHelper} from "./infinityWalletHelper";
 import {Identity} from "@dfinity/agent";
 import {AuthAccount} from "../AuthCommon";
 import {Util} from "../util";
@@ -51,11 +51,11 @@ const initialContextValue: Context = {
     createActor: () => Promise.resolve(undefined),
 }
 
-const PlugAuthProviderContext = React.createContext<Context | undefined>(undefined)
-export const usePlugAuthProviderContext = () => {
-    const context = React.useContext<Context | undefined>(PlugAuthProviderContext);
+const InfinityWalletAuthProviderContext = React.createContext<Context | undefined>(undefined)
+export const useInfinityWalletAuthProviderContext = () => {
+    const context = React.useContext<Context | undefined>(InfinityWalletAuthProviderContext);
     if (!context) {
-        throw new Error("usePlugAuthProviderContext must be used within a PlugAuthProviderContext.Provider")
+        throw new Error("useInfinityWalletAuthProviderContext must be used within a InfinityWalletAuthProviderContext.Provider")
     }
     return context;
 };
@@ -64,7 +64,7 @@ type Props = {
     whitelist?: Array<string>
 }
 
-export const PlugAuthProvider = (props: PropsWithChildren<Props>) => {
+export const InfinityWalletAuthProvider = (props: PropsWithChildren<Props>) => {
     const authSourceProviderContext = useAuthSourceProviderContext();
 
     // STATE
@@ -82,15 +82,15 @@ export const PlugAuthProvider = (props: PropsWithChildren<Props>) => {
     const login: LoginFn = useCustomCompareCallback<LoginFn, [Array<string> | undefined]>(async () => {
         try {
             unstable_batchedUpdates(() => {
-                authSourceProviderContext.setSource("Plug")
+                authSourceProviderContext.setSource("InfinityWallet")
                 updateContextStatus({inProgress: true})
             })
             if (process.env.NODE_ENV === "development") {
-                console.log("Plug.login: will call 'await PlugHelper.login' with whitelist", props.whitelist);
+                console.log("InfinityWallet.login: will call 'await InfinityWalletHelper.login' with whitelist", props.whitelist);
             }
-            const principal = await PlugHelper.login(props.whitelist)
+            const principal = await InfinityWalletHelper.login(props.whitelist)
             if (process.env.NODE_ENV === "development") {
-                console.log("Plug.login: got principal", principal, principal?.toText());
+                console.log("InfinityWallet.login: got principal", principal, principal?.toText());
             }
             if (principal) {
                 const accounts = await getPrincipalAccounts(principal)
@@ -106,7 +106,7 @@ export const PlugAuthProvider = (props: PropsWithChildren<Props>) => {
                 updateContextState({principal: undefined, accounts: []})
             })
         } catch (e) {
-            console.error("PlugAuthProvider: login: caught error", e);
+            console.error("InfinityWalletAuthProvider: login: caught error", e);
             unstable_batchedUpdates(() => {
                 authSourceProviderContext.setSource(undefined)
                 updateContextStatus({isLoggedIn: false, inProgress: false})
@@ -120,7 +120,7 @@ export const PlugAuthProvider = (props: PropsWithChildren<Props>) => {
 
     const logout: LogoutFn = useCallback<LogoutFn>(async () => {
         unstable_batchedUpdates(() => {
-            PlugHelper.logout()
+            InfinityWalletHelper.logout()
             authSourceProviderContext.setSource(undefined)
             updateContextStatus({isLoggedIn: false})
             updateContextState({principal: undefined, accounts: []})
@@ -129,11 +129,11 @@ export const PlugAuthProvider = (props: PropsWithChildren<Props>) => {
 
     const createActor: CreateActorFn = useCustomCompareCallback(async function <T>(canisterId: string, idlFactory: IDL.InterfaceFactory, options?: CreateActorOptions) {
         if (process.env.NODE_ENV === "development") {
-            console.log("PlugAuthProvider: start with", {canisterId, idlFactory, options});
+            console.log("InfinityWalletAuthProvider: start with", {canisterId, idlFactory, options});
         }
-        const createActorResult = await PlugHelper.createActor(canisterId, idlFactory);
+        const createActorResult = await InfinityWalletHelper.createActor(canisterId, idlFactory);
         if (process.env.NODE_ENV === "development") {
-            console.log("PlugAuthProvider: createActorResult", createActorResult);
+            console.log("InfinityWalletAuthProvider: createActorResult", createActorResult);
         }
         if (createActorResult != undefined) {
             return createActorResult
@@ -141,17 +141,18 @@ export const PlugAuthProvider = (props: PropsWithChildren<Props>) => {
     }, [], _.isEqual)
 
     // EFFECT
+
     useEffect(() => {
         (async () => {
             try {
-                if (authSourceProviderContext.source == "Plug") {
+                if (authSourceProviderContext.source == "InfinityWallet") {
                     updateContextStatus({inProgress: true})
                     if (process.env.NODE_ENV === "development") {
-                        console.log("Plug.autologin: will call 'await PlugHelper.getLoggedInIdentity'");
+                        console.log("InfinityWallet.autologin: will call 'await InfinityWalletHelper.getLoggedInPrincipal' with whitelist", props.whitelist);
                     }
-                    const principal = await PlugHelper.getLoggedInPrincipal()
+                    const principal = await InfinityWalletHelper.getLoggedInPrincipal(props.whitelist)
                     if (process.env.NODE_ENV === "development") {
-                        console.log("Plug.autologin: got principal", principal, principal?.toText());
+                        console.log("InfinityWallet.autologin: got principal", principal, principal?.toText());
                     }
                     if (principal) {
                         const accounts = await getPrincipalAccounts(principal)
@@ -163,16 +164,16 @@ export const PlugAuthProvider = (props: PropsWithChildren<Props>) => {
                     }
                 }
                 unstable_batchedUpdates(() => {
-                    if (authSourceProviderContext.source == "Plug") {
+                    if (authSourceProviderContext.source == "InfinityWallet") {
                         authSourceProviderContext.setSource(undefined)
                     }
                     updateContextStatus({isReady: true, isLoggedIn: false, inProgress: false})
                     updateContextState({principal: undefined, accounts: []})
                 })
             } catch (e) {
-                console.error("PlugAuthProvider: useEffect[]: caught error", authSourceProviderContext.source, e);
+                console.error("InfinityWalletAuthProvider: useEffect[]: caught error", authSourceProviderContext.source, e);
                 unstable_batchedUpdates(() => {
-                    if (authSourceProviderContext.source == "Plug") {
+                    if (authSourceProviderContext.source == "InfinityWallet") {
                         authSourceProviderContext.setSource(undefined)
                     }
                     updateContextStatus({isReady: true, isLoggedIn: false, inProgress: false})
@@ -206,15 +207,15 @@ export const PlugAuthProvider = (props: PropsWithChildren<Props>) => {
         return _.isEqual(prevDeps, nextDeps)
     })
 
-    return <PlugAuthProviderContext.Provider value={value}>
+    return <InfinityWalletAuthProviderContext.Provider value={value}>
         {props.children}
-    </PlugAuthProviderContext.Provider>
+    </InfinityWalletAuthProviderContext.Provider>
 }
 
 const getPrincipalAccounts = async (principal: Principal): Promise<Array<AuthAccount>> => {
     try {
         return [{
-            name: "Plug",
+            name: "Infinity Wallet",
             accountIdentifier: Util.principalToAccountIdentifier(principal.toText(), 0)
         }]
     } catch (e) {

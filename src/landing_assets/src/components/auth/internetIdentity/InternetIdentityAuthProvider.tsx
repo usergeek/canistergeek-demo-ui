@@ -1,13 +1,16 @@
 import * as React from "react";
 import {PropsWithChildren, Reducer, useCallback, useEffect, useReducer} from "react";
 import {unstable_batchedUpdates} from "react-dom";
-import {useCustomCompareMemo} from "use-custom-compare";
+import {useCustomCompareCallback, useCustomCompareMemo} from "use-custom-compare";
 import _ from "lodash";
 import {Source, useAuthSourceProviderContext} from "../authSource/AuthSourceProvider";
 import {Identity} from "@dfinity/agent";
 import {AuthClientFacade} from "./AuthClientFacade";
 import {AuthAccount} from "../AuthCommon";
 import {Util} from "../util";
+import {CreateActorFn, createActorGeneric, CreateActorOptions} from "../AuthProvider";
+import {IDL} from "@dfinity/candid";
+import {Principal} from "@dfinity/principal";
 
 type ContextStatus = {
     inProgress: boolean
@@ -17,6 +20,7 @@ type ContextStatus = {
 
 type ContextState = {
     identity: Identity | undefined
+    principal: Principal | undefined
     accounts: Array<AuthAccount>
 }
 
@@ -28,6 +32,7 @@ export interface Context {
     state: ContextState
     login: LoginFn
     logout: LogoutFn
+    createActor: CreateActorFn
 }
 
 const initialContextValue: Context = {
@@ -38,10 +43,12 @@ const initialContextValue: Context = {
     },
     state: {
         identity: undefined,
+        principal: undefined,
         accounts: []
     },
     login: () => Promise.reject(),
     logout: () => undefined,
+    createActor: () => Promise.resolve(undefined),
 }
 
 export const InternetIdentityAuthProviderContext = React.createContext<Context | undefined>(undefined)
@@ -87,7 +94,7 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<Props>) =>
                     const accounts = await getIdentityAccounts(identity, props.source)
                     unstable_batchedUpdates(() => {
                         updateContextStatus({isLoggedIn: true, inProgress: false})
-                        updateContextState({identity: identity, accounts: accounts})
+                        updateContextState({identity: identity, principal: identity.getPrincipal(), accounts: accounts})
                     })
                     return true
                 }
@@ -95,14 +102,14 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<Props>) =>
             unstable_batchedUpdates(() => {
                 authSourceProviderContext.setSource(undefined)
                 updateContextStatus({isLoggedIn: false, inProgress: false})
-                updateContextState({identity: undefined, accounts: []})
+                updateContextState({identity: undefined, principal: undefined, accounts: []})
             })
         } catch (e) {
             console.error("InternetIdentityAuthProvider: login: caught error", e);
             unstable_batchedUpdates(() => {
                 authSourceProviderContext.setSource(undefined)
                 updateContextStatus({isLoggedIn: false, inProgress: false})
-                updateContextState({identity: undefined, accounts: []})
+                updateContextState({identity: undefined, principal: undefined, accounts: []})
             })
         }
         return false
@@ -117,18 +124,31 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<Props>) =>
             unstable_batchedUpdates(() => {
                 authSourceProviderContext.setSource(undefined)
                 updateContextStatus({isLoggedIn: false})
-                updateContextState({identity: undefined, accounts: []})
+                updateContextState({identity: undefined, principal: undefined, accounts: []})
             })
         } catch (e) {
             console.error("InternetIdentityAuthProvider: logout: caught error", e);
             unstable_batchedUpdates(() => {
                 authSourceProviderContext.setSource(undefined)
                 updateContextStatus({isLoggedIn: false})
-                updateContextState({identity: undefined, accounts: []})
+                updateContextState({identity: undefined, principal: undefined, accounts: []})
             })
         }
 
     }, [])
+
+    const createActor: CreateActorFn = useCustomCompareCallback(async function <T>(canisterId: string, idlFactory: IDL.InterfaceFactory, options?: CreateActorOptions) {
+        if (process.env.NODE_ENV === "development") {
+            console.log("InternetIdentityAuthProvider: start with", {canisterId, idlFactory, options});
+        }
+        const createActorResult = await createActorGeneric<T>(canisterId, idlFactory, options);
+        if (process.env.NODE_ENV === "development") {
+            console.log("InternetIdentityAuthProvider: createActorResult", createActorResult);
+        }
+        if (createActorResult != undefined) {
+            return createActorResult
+        }
+    }, [], _.isEqual)
 
     // EFFECT
 
@@ -144,7 +164,7 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<Props>) =>
                             const accounts = await getIdentityAccounts(identity, props.source)
                             unstable_batchedUpdates(() => {
                                 updateContextStatus({isReady: true, isLoggedIn: true, inProgress: false})
-                                updateContextState({identity: identity, accounts: accounts})
+                                updateContextState({identity: identity, principal: identity.getPrincipal(), accounts: accounts})
                             })
                             return
                         }
@@ -152,7 +172,7 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<Props>) =>
                     unstable_batchedUpdates(() => {
                         authSourceProviderContext.setSource(undefined)
                         updateContextStatus({isReady: true, isLoggedIn: false, inProgress: false})
-                        updateContextState({identity: undefined, accounts: []})
+                        updateContextState({identity: undefined, principal: undefined, accounts: []})
                     })
                 }
                 unstable_batchedUpdates(() => {
@@ -160,7 +180,7 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<Props>) =>
                         authSourceProviderContext.setSource(undefined)
                     }
                     updateContextStatus({isReady: true, isLoggedIn: false, inProgress: false})
-                    updateContextState({identity: undefined, accounts: []})
+                    updateContextState({identity: undefined, principal: undefined, accounts: []})
                 })
             } catch (e) {
                 console.error("InternetIdentityAuthProvider: useEffect[]: caught error", authSourceProviderContext.source, e);
@@ -169,7 +189,7 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<Props>) =>
                         authSourceProviderContext.setSource(undefined)
                     }
                     updateContextStatus({isReady: true, isLoggedIn: false, inProgress: false})
-                    updateContextState({identity: undefined, accounts: []})
+                    updateContextState({identity: undefined, principal: undefined, accounts: []})
                 })
             }
         })()
@@ -182,16 +202,19 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<Props>) =>
         ContextState,
         LoginFn,
         LogoutFn,
+        CreateActorFn,
     ]>(() => ({
         status: contextStatus,
         state: contextState,
         login: login,
         logout: logout,
+        createActor: createActor,
     }), [
         contextStatus,
         contextState,
         login,
         logout,
+        createActor,
     ], (prevDeps, nextDeps) => {
         return _.isEqual(prevDeps, nextDeps)
     })
@@ -204,7 +227,7 @@ export const InternetIdentityAuthProvider = (props: PropsWithChildren<Props>) =>
 const getIdentityAccounts = async (identity: Identity, source: Source): Promise<Array<AuthAccount>> => {
     try {
         return [{
-            name: source === "II" ? "NNS Main Wallet" : "NFID Main Wallet",
+            name: source === "II" ? "Internet Identity" : "NFID",
             accountIdentifier: Util.principalToAccountIdentifier(identity.getPrincipal().toText(), 0)
         }]
     } catch (e) {

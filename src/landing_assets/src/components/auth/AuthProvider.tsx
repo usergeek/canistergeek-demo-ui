@@ -2,7 +2,8 @@ import * as React from "react";
 import {PropsWithChildren, Reducer, useCallback, useReducer, useState} from "react";
 import {useCustomCompareCallback, useCustomCompareEffect, useCustomCompareMemo} from "use-custom-compare";
 import _ from "lodash"
-import {HttpAgent, Identity} from "@dfinity/agent";
+import {Actor, ActorConfig, ActorSubclass, HttpAgent, HttpAgentOptions, Identity} from "@dfinity/agent";
+import {IDL} from '@dfinity/candid';
 import {Principal} from "@dfinity/principal";
 import {usePlugAuthProviderContext} from "./plug/PlugAuthProvider";
 import {Source, useAuthSourceProviderContext} from "./authSource/AuthSourceProvider";
@@ -11,6 +12,7 @@ import {useInternetIdentityAuthProviderContext} from "./internetIdentity/Interne
 import {useStoicAuthProviderContext} from "./stoic/StoicAuthProvider";
 import {useNFIDInternetIdentityAuthProviderContext} from "./nfid/NFIDAuthProvider";
 import {AuthAccount} from "./AuthCommon";
+import {useInfinityWalletAuthProviderContext} from "./infinityWallet/InfinityWalletAuthProvider";
 
 type ContextStatus = {
     inProgress: boolean
@@ -20,9 +22,9 @@ type ContextStatus = {
 
 type ContextState = {
     identity: Identity | undefined
+    principal: Principal | undefined
     accounts: Array<AuthAccount>
     currentAccount: number | undefined
-    httpAgent: HttpAgent | undefined
 }
 
 type LoginFn = (source: Source) => Promise<boolean>
@@ -30,6 +32,9 @@ type LogoutFn = (source: Source) => void
 type SwitchAccountFn = (targetAccount: number) => void
 type GetCurrentPrincipalFn = () => Principal | undefined
 type GetCurrentAccountFn = () => AuthAccount | undefined
+
+export type CreateActorOptions = { agentOptions?: HttpAgentOptions; actorOptions?: ActorConfig }
+export type CreateActorFn = <T>(canisterId: string, idlFactory: IDL.InterfaceFactory, options?: CreateActorOptions) => Promise<ActorSubclass<T> | undefined>
 
 interface Context {
     source: Source
@@ -40,6 +45,7 @@ interface Context {
     switchAccount: SwitchAccountFn
     getCurrentPrincipal: GetCurrentPrincipalFn
     getCurrentAccount: GetCurrentAccountFn
+    createActor: CreateActorFn
 }
 
 const initialContextValue: Context = {
@@ -51,15 +57,16 @@ const initialContextValue: Context = {
     },
     state: {
         identity: undefined,
+        principal: undefined,
         accounts: [],
         currentAccount: undefined,
-        httpAgent: undefined,
     },
     login: () => Promise.reject(),
     logout: () => undefined,
     switchAccount: (targetAccount: number) => undefined,
     getCurrentPrincipal: () => undefined,
     getCurrentAccount: () => undefined,
+    createActor: () => Promise.resolve(undefined),
 }
 
 
@@ -73,12 +80,16 @@ export const useAuthProviderContext = () => {
     return context;
 };
 
-export const AuthProvider = (props: PropsWithChildren<any>) => {
+type Props = {
+    onLogout?: () => void
+}
+export const AuthProvider = (props: PropsWithChildren<Props>) => {
     const authSourceProviderContext = useAuthSourceProviderContext();
     const plugAuthProviderContext = usePlugAuthProviderContext();
     const stoicAuthProviderContext = useStoicAuthProviderContext()
     const internetIdentityAuthProviderContext = useInternetIdentityAuthProviderContext();
     const nfidInternetIdentityAuthProviderContext = useNFIDInternetIdentityAuthProviderContext();
+    const infinityWalletAuthProviderContext = useInfinityWalletAuthProviderContext();
 
     const [contextSource, setContextSource] = useState<Source>(() => {
         return authSourceProviderContext.source
@@ -108,26 +119,44 @@ export const AuthProvider = (props: PropsWithChildren<any>) => {
             case "Stoic": {
                 return stoicAuthProviderContext.login()
             }
+            case "InfinityWallet": {
+                return infinityWalletAuthProviderContext.login()
+            }
         }
         return false
-    }, [plugAuthProviderContext.login, internetIdentityAuthProviderContext.login, nfidInternetIdentityAuthProviderContext.login, stoicAuthProviderContext.login,])
+    }, [plugAuthProviderContext.login, internetIdentityAuthProviderContext.login,
+        nfidInternetIdentityAuthProviderContext.login, stoicAuthProviderContext.login,
+        infinityWalletAuthProviderContext.login])
 
     const logout: LogoutFn = useCallback<LogoutFn>(async (source: Source) => {
         switch (source) {
             case "Plug": {
-                return plugAuthProviderContext.logout()
+                await plugAuthProviderContext.logout()
+                break
             }
             case "II": {
-                return internetIdentityAuthProviderContext.logout()
+                await internetIdentityAuthProviderContext.logout()
+                break
             }
             case "NFID": {
-                return nfidInternetIdentityAuthProviderContext.logout()
+                await nfidInternetIdentityAuthProviderContext.logout()
+                break
             }
             case "Stoic": {
-                return stoicAuthProviderContext.logout()
+                await stoicAuthProviderContext.logout()
+                break
+            }
+            case "InfinityWallet": {
+                await infinityWalletAuthProviderContext.logout()
+                break
             }
         }
-    }, [plugAuthProviderContext.logout, internetIdentityAuthProviderContext.logout, nfidInternetIdentityAuthProviderContext.logout, stoicAuthProviderContext.logout,])
+        if (props.onLogout && typeof props.onLogout === "function") {
+            props.onLogout()
+        }
+    }, [plugAuthProviderContext.logout, internetIdentityAuthProviderContext.logout,
+        nfidInternetIdentityAuthProviderContext.logout, stoicAuthProviderContext.logout,
+        infinityWalletAuthProviderContext.logout, props.onLogout])
 
     const switchAccount: SwitchAccountFn = useCustomCompareCallback((targetAccount: number) => {
         // console.log("switchAccount: targetAccount", targetAccount);
@@ -146,11 +175,11 @@ export const AuthProvider = (props: PropsWithChildren<any>) => {
         // console.log("getCurrentAccount: contextStatus.isReady", contextStatus.isReady);
         // console.log("getCurrentAccount: contextStatus.isLoggedIn", contextStatus.isLoggedIn);
         // console.log("getCurrentAccount: contextState.identity", contextState.identity);
-        if (contextStatus.isReady && contextStatus.isLoggedIn && contextState.identity != undefined) {
-            return contextState.identity.getPrincipal()
+        if (contextStatus.isReady && contextStatus.isLoggedIn && contextState.principal != undefined) {
+            return contextState.principal
         }
         return undefined
-    }, [contextState.identity, contextStatus], _.isEqual)
+    }, [contextState.principal, contextStatus], _.isEqual)
 
     const getCurrentAccount: GetCurrentAccountFn = useCustomCompareCallback(() => {
         // console.log("getCurrentAccount: currentAccount", contextState.currentAccount);
@@ -161,6 +190,37 @@ export const AuthProvider = (props: PropsWithChildren<any>) => {
         return undefined
     }, [contextState], _.isEqual)
 
+    const createActor: CreateActorFn = useCustomCompareCallback(async (canisterId: string, idlFactory: IDL.InterfaceFactory, options?: CreateActorOptions) => {
+        let actor: ActorSubclass<any> | undefined = undefined
+        if (contextStatus.isLoggedIn) {
+            switch (contextSource) {
+                case "Plug": {
+                    actor = await plugAuthProviderContext.createActor(canisterId, idlFactory, options)
+                    break;
+                }
+                case "II": {
+                    actor = await internetIdentityAuthProviderContext.createActor(canisterId, idlFactory, options)
+                    break;
+                }
+                case "NFID": {
+                    actor = await nfidInternetIdentityAuthProviderContext.createActor(canisterId, idlFactory, options)
+                    break;
+                }
+                case "Stoic": {
+                    actor = await stoicAuthProviderContext.createActor(canisterId, idlFactory, options)
+                    break;
+                }
+                case "InfinityWallet": {
+                    actor = await infinityWalletAuthProviderContext.createActor(canisterId, idlFactory, options)
+                    break;
+                }
+            }
+        } else {
+            actor = createActorGeneric(canisterId, idlFactory, options)
+        }
+        return actor
+    }, [contextSource, contextStatus.isLoggedIn], _.isEqual)
+
     useCustomCompareEffect(() => {
         const source = authSourceProviderContext.source;
         let status: ContextStatus = _.cloneDeep(initialContextValue.status)
@@ -170,9 +230,9 @@ export const AuthProvider = (props: PropsWithChildren<any>) => {
                 status = plugAuthProviderContext.status
                 state = {
                     identity: plugAuthProviderContext.state.identity,
+                    principal: plugAuthProviderContext.state.principal,
                     accounts: plugAuthProviderContext.state.accounts,
                     currentAccount: 0,
-                    httpAgent: plugAuthProviderContext.state.httpAgent,
                 }
                 break
             }
@@ -180,9 +240,9 @@ export const AuthProvider = (props: PropsWithChildren<any>) => {
                 status = internetIdentityAuthProviderContext.status
                 state = {
                     identity: internetIdentityAuthProviderContext.state.identity,
+                    principal: internetIdentityAuthProviderContext.state.principal,
                     accounts: internetIdentityAuthProviderContext.state.accounts,
                     currentAccount: 0,
-                    httpAgent: undefined,
                 }
                 break
             }
@@ -190,9 +250,9 @@ export const AuthProvider = (props: PropsWithChildren<any>) => {
                 status = nfidInternetIdentityAuthProviderContext.status
                 state = {
                     identity: nfidInternetIdentityAuthProviderContext.state.identity,
+                    principal: nfidInternetIdentityAuthProviderContext.state.principal,
                     accounts: nfidInternetIdentityAuthProviderContext.state.accounts,
                     currentAccount: 0,
-                    httpAgent: undefined,
                 }
                 break
             }
@@ -200,9 +260,19 @@ export const AuthProvider = (props: PropsWithChildren<any>) => {
                 status = stoicAuthProviderContext.status
                 state = {
                     identity: stoicAuthProviderContext.state.identity,
+                    principal: stoicAuthProviderContext.state.principal,
                     accounts: stoicAuthProviderContext.state.accounts,
                     currentAccount: 0,
-                    httpAgent: undefined,
+                }
+                break
+            }
+            case "InfinityWallet": {
+                status = infinityWalletAuthProviderContext.status
+                state = {
+                    identity: infinityWalletAuthProviderContext.state.identity,
+                    principal: infinityWalletAuthProviderContext.state.principal,
+                    accounts: infinityWalletAuthProviderContext.state.accounts,
+                    currentAccount: 0,
                 }
                 break
             }
@@ -212,6 +282,7 @@ export const AuthProvider = (props: PropsWithChildren<any>) => {
                     internetIdentityAuthProviderContext.status,
                     nfidInternetIdentityAuthProviderContext.status,
                     stoicAuthProviderContext.status,
+                    infinityWalletAuthProviderContext.status,
                 ], value => {
                     return value.isReady
                 });
@@ -233,6 +304,8 @@ export const AuthProvider = (props: PropsWithChildren<any>) => {
         nfidInternetIdentityAuthProviderContext.state,
         stoicAuthProviderContext.status,
         stoicAuthProviderContext.state,
+        infinityWalletAuthProviderContext.status,
+        infinityWalletAuthProviderContext.state,
     ], _.isEqual)
 
     const value = useCustomCompareMemo<Context, [
@@ -244,6 +317,7 @@ export const AuthProvider = (props: PropsWithChildren<any>) => {
         SwitchAccountFn,
         GetCurrentPrincipalFn,
         GetCurrentAccountFn,
+        CreateActorFn,
     ]>(() => ({
         source: contextSource,
         status: contextStatus,
@@ -253,6 +327,7 @@ export const AuthProvider = (props: PropsWithChildren<any>) => {
         switchAccount: switchAccount,
         getCurrentPrincipal: getCurrentPrincipal,
         getCurrentAccount: getCurrentAccount,
+        createActor: createActor,
     }), [
         contextSource,
         contextStatus,
@@ -262,9 +337,29 @@ export const AuthProvider = (props: PropsWithChildren<any>) => {
         switchAccount,
         getCurrentPrincipal,
         getCurrentAccount,
+        createActor,
     ], _.isEqual)
 
     return <AuthProviderContext.Provider value={value}>
         {props.children}
     </AuthProviderContext.Provider>
+}
+
+export function createActorGeneric<T>(canisterId: string, idlFactory: IDL.InterfaceFactory, options?: CreateActorOptions): ActorSubclass<T> {
+    const agent = new HttpAgent({...options?.agentOptions});
+
+    // Fetch root key for certificate validation during development
+    if (process.env.NODE_ENV !== "production") {
+        agent.fetchRootKey().catch(err => {
+            console.warn("Unable to fetch root key. Check to ensure that your local replica is running");
+            console.error(err);
+        });
+    }
+
+    // Creates an actor with using the candid interface and the HttpAgent
+    return Actor.createActor<T>(idlFactory, {
+        agent,
+        canisterId: canisterId,
+        ...options?.actorOptions
+    });
 }

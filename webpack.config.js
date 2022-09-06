@@ -4,10 +4,9 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const TerserPlugin = require("terser-webpack-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
-const CopyPlugin = require("copy-webpack-plugin");
 const WebpackBar = require("webpackbar");
 
-const LOCAL_II_URL = "http://rwlgt-iiaaa-aaaaa-aaaaa-cai.localhost:8000"
+const LOCAL_II_URL = "http://rrkah-fqaaa-aaaaa-aaaaq-cai.localhost:8000"
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 
@@ -101,14 +100,6 @@ module.exports = {
         new HtmlWebpackPlugin({
             template: path.join(__dirname, asset_entry),
             cache: false
-        }),
-        new CopyPlugin({
-            patterns: [
-                {
-                    from: path.join(__dirname, frontendDirectoryPath, "assets"),
-                    to: path.join(__dirname, "dist", frontendDirectory),
-                },
-            ],
         }),
         new webpack.EnvironmentPlugin({
             NODE_ENV: "development",

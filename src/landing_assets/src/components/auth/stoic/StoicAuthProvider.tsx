@@ -1,12 +1,15 @@
 import * as React from "react";
 import {PropsWithChildren, Reducer, useCallback, useEffect, useReducer} from "react";
 import {unstable_batchedUpdates} from "react-dom";
-import {useCustomCompareMemo} from "use-custom-compare";
+import {useCustomCompareCallback, useCustomCompareMemo} from "use-custom-compare";
 import _ from "lodash";
 import {StoicIdentity} from "ic-stoic-identity";
 import {useAuthSourceProviderContext} from "../authSource/AuthSourceProvider";
 import {Identity} from "@dfinity/agent";
 import {AuthAccount} from "../AuthCommon";
+import {CreateActorFn, createActorGeneric, CreateActorOptions} from "../AuthProvider";
+import {IDL} from "@dfinity/candid";
+import {Principal} from "@dfinity/principal";
 
 type ContextStatus = {
     inProgress: boolean
@@ -16,6 +19,7 @@ type ContextStatus = {
 
 type ContextState = {
     identity: Identity | undefined
+    principal: Principal | undefined
     accounts: Array<AuthAccount>
 }
 
@@ -27,6 +31,7 @@ interface Context {
     state: ContextState
     login: LoginFn
     logout: LogoutFn
+    createActor: CreateActorFn
 }
 
 const initialContextValue: Context = {
@@ -37,10 +42,12 @@ const initialContextValue: Context = {
     },
     state: {
         identity: undefined,
+        principal: undefined,
         accounts: []
     },
     login: () => Promise.reject(),
     logout: () => undefined,
+    createActor: () => Promise.resolve(undefined),
 }
 
 const StoicAuthProviderContext = React.createContext<Context | undefined>(undefined)
@@ -80,21 +87,21 @@ export const StoicAuthProvider = (props: PropsWithChildren<Props>) => {
                 const accounts = await getIdentityAccounts(identity)
                 unstable_batchedUpdates(() => {
                     updateContextStatus({isLoggedIn: true, inProgress: false})
-                    updateContextState({identity: identity, accounts: accounts})
+                    updateContextState({identity: identity, principal: identity.getPrincipal(), accounts: accounts})
                 })
                 return true
             }
             unstable_batchedUpdates(() => {
                 authSourceProviderContext.setSource(undefined)
                 updateContextStatus({isLoggedIn: false, inProgress: false})
-                updateContextState({identity: undefined, accounts: []})
+                updateContextState({identity: undefined, principal: undefined, accounts: []})
             })
         } catch (e) {
             console.error("StoicAuthProvider: login: caught error", e);
             unstable_batchedUpdates(() => {
                 authSourceProviderContext.setSource(undefined)
                 updateContextStatus({isLoggedIn: false, inProgress: false})
-                updateContextState({identity: undefined, accounts: []})
+                updateContextState({identity: undefined, principal: undefined, accounts: []})
             })
         }
         return false
@@ -105,9 +112,18 @@ export const StoicAuthProvider = (props: PropsWithChildren<Props>) => {
         unstable_batchedUpdates(() => {
             authSourceProviderContext.setSource(undefined)
             updateContextStatus({isLoggedIn: false})
-            updateContextState({identity: undefined, accounts: []})
+            updateContextState({identity: undefined, principal: undefined, accounts: []})
         })
     }, [])
+
+    const createActor: CreateActorFn = useCustomCompareCallback(async function <T>(canisterId: string, idlFactory: IDL.InterfaceFactory, options?: CreateActorOptions) {
+        // console.log("StoicAuthProvider: start with", {canisterId, idlFactory, options});
+        const createActorResult = await createActorGeneric<T>(canisterId, idlFactory, options);
+        // console.log("StoicAuthProvider: createActorResult", createActorResult);
+        if (createActorResult != undefined) {
+            return createActorResult
+        }
+    }, [], _.isEqual)
 
     // EFFECT
 
@@ -121,7 +137,7 @@ export const StoicAuthProvider = (props: PropsWithChildren<Props>) => {
                         const accounts = await getIdentityAccounts(identity)
                         unstable_batchedUpdates(() => {
                             updateContextStatus({isReady: true, isLoggedIn: true, inProgress: false})
-                            updateContextState({identity: identity, accounts: accounts})
+                            updateContextState({identity: identity, principal: identity.getPrincipal(), accounts: accounts})
                         })
                         return
                     }
@@ -131,7 +147,7 @@ export const StoicAuthProvider = (props: PropsWithChildren<Props>) => {
                         authSourceProviderContext.setSource(undefined)
                     }
                     updateContextStatus({isReady: true, isLoggedIn: false, inProgress: false})
-                    updateContextState({identity: undefined, accounts: []})
+                    updateContextState({identity: undefined, principal: undefined, accounts: []})
                 })
             } catch (e) {
                 console.error("StoicAuthProvider: useEffect[]: caught error", authSourceProviderContext.source, e);
@@ -140,7 +156,7 @@ export const StoicAuthProvider = (props: PropsWithChildren<Props>) => {
                         authSourceProviderContext.setSource(undefined)
                     }
                     updateContextStatus({isReady: true, isLoggedIn: false, inProgress: false})
-                    updateContextState({identity: undefined, accounts: []})
+                    updateContextState({identity: undefined, principal: undefined, accounts: []})
                 })
             }
         })()
@@ -153,16 +169,19 @@ export const StoicAuthProvider = (props: PropsWithChildren<Props>) => {
         ContextState,
         LoginFn,
         LogoutFn,
+        CreateActorFn
     ]>(() => ({
         status: contextStatus,
         state: contextState,
         login: login,
         logout: logout,
+        createActor: createActor,
     }), [
         contextStatus,
         contextState,
         login,
         logout,
+        createActor,
     ], (prevDeps, nextDeps) => {
         return _.isEqual(prevDeps, nextDeps)
     })
